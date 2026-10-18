@@ -547,6 +547,9 @@ export class InteractiveMode {
 	// Shutdown state
 	private shutdownRequested = false;
 
+	// Session todo list
+	private todoList: string[] = [];
+
 	/** Reports working, blocked, done, and error states to terminals that support OSC 7501. */
 	private readonly programStatus = new ProgramStatusReporter(
 		() => this.ui.terminal,
@@ -3337,6 +3340,12 @@ export class InteractiveMode {
 			if (text === "/resume") {
 				this.showSessionSelector();
 				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : "";
+				this.editor.setText("");
+				this.handleTodoCommand(todoText);
 				return;
 			}
 			if (text === "/quit") {
@@ -6681,6 +6690,28 @@ export class InteractiveMode {
 		} catch (error) {
 			this.showError(error instanceof Error ? error.message : String(error));
 		}
+	}
+
+	private handleTodoCommand(text: string): void {
+		if (!text) {
+			// List todos
+			if (this.todoList.length === 0) {
+				this.chatContainer.addChild(new Spacer(1));
+				this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", "Todo list is empty"), 1, 0));
+			} else {
+				this.chatContainer.addChild(new Spacer(1));
+				this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", "Todo list:"), 1, 0));
+				this.todoList.forEach((item, index) => {
+					this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `  ${index + 1}. ${item}`), 1, 0));
+				});
+			}
+		} else {
+			// Add todo
+			this.todoList.push(text);
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Added to todo: ${text}`), 1, 0));
+		}
+		this.ui.requestRender();
 	}
 
 	private handleNameCommand(text: string): void {
