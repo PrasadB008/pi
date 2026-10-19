@@ -547,6 +547,9 @@ export class InteractiveMode {
 	// Shutdown state
 	private shutdownRequested = false;
 
+	// Todo list for the session
+	private todoItems: string[] = [];
+
 	/** Reports working, blocked, done, and error states to terminals that support OSC 7501. */
 	private readonly programStatus = new ProgramStatusReporter(
 		() => this.ui.terminal,
@@ -3331,6 +3334,11 @@ export class InteractiveMode {
 			}
 			if (text === "/dementedelves") {
 				this.handleDementedDelves();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6999,6 +7007,32 @@ export class InteractiveMode {
 	private handleDementedDelves(): void {
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new EarendilAnnouncementComponent());
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		const todoText = text.slice(6).trim(); // Remove "/todo " prefix
+
+		if (todoText === "") {
+			// List todos
+			if (this.todoItems.length === 0) {
+				this.chatContainer.addChild(new Spacer(1));
+				this.chatContainer.addChild(
+					new ThemedText(() => this.ui.theme.colors.text, "No todo items yet. Use /todo <text> to add one."),
+				);
+			} else {
+				this.chatContainer.addChild(new Spacer(1));
+				this.chatContainer.addChild(new ThemedText(() => this.ui.theme.colors.text, "Todo items:"));
+				this.todoItems.forEach((item, index) => {
+					this.chatContainer.addChild(new ThemedText(() => this.ui.theme.colors.text, `  ${index + 1}. ${item}`));
+				});
+			}
+		} else {
+			// Add todo
+			this.todoItems.push(todoText);
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(new ThemedText(() => this.ui.theme.colors.text, `Added: ${todoText}`));
+		}
 		this.ui.requestRender();
 	}
 
