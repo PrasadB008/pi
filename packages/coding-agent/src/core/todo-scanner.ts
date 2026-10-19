@@ -32,7 +32,7 @@ const IGNORED_DIRS = new Set([
 ]);
 
 // Marker must follow a comment opener so plain strings like "TODO list" are not matched.
-const TODO_PATTERN = /(?:\/\/|\/\*|#|--|<!--|^\s*\*)\s*(TODO|FIXME|HACK|XXX)\b[:(]?\s*(.*)$/;
+const TODO_PATTERN = /(?:\/\/|\/\*|#|--|<!--|^\s*\*)\s*(TODO|FIXME|HACK|XXX)\b(?:\([^)]*\))?:?\s*(.*)$/;
 
 export function parseTodoLine(line: string): { tag: string; text: string } | undefined {
 	const match = TODO_PATTERN.exec(line);
