@@ -28,7 +28,7 @@ const DEFAULT_MAX_ITEMS = 200;
 const DEFAULT_MAX_FILE_BYTES = 1024 * 1024;
 const IGNORED_DIRS = new Set([".git", "node_modules", "dist", "build", ".next", "coverage", ".venv", "target"]);
 // Marker must be inside a comment-like context: preceded by //, #, /*, *, --, ;, <!-- or %.
-const TODO_RE = /(?:\/\/|#|\/\*|\*|--|;|<!--|%)\s*(TODO|FIXME)\b[:(]?\s*(.*)$/;
+const TODO_RE = /(?:\/\/|#|\/\*|\*|--|;|<!--|%)\s*(TODO|FIXME)\b(?:\([^)]*\))?:?\s*(.*)$/;
 
 function execGit(cwd: string, args: string[]): Promise<string | undefined> {
 	return new Promise((resolve) => {
