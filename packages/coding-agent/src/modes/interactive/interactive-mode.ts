@@ -131,6 +131,7 @@ import { getCwdRelativePath } from "../../utils/paths.ts";
 import { getPiUserAgent } from "../../utils/pi-user-agent.ts";
 import { killTrackedDetachedChildren } from "../../utils/shell.ts";
 import { loadAllHighlightLanguages } from "../../utils/syntax-highlight.ts";
+import { formatTodos, scanTodos } from "../../utils/todo-scan.ts";
 import { ensureTool, type ToolStatus } from "../../utils/tools-manager.ts";
 import { checkForNewPiVersion, type LatestPiRelease } from "../../utils/version-check.ts";
 import { reportBug } from "./bug-report.ts";
@@ -3193,6 +3194,17 @@ export class InteractiveMode {
 		}
 	}
 
+	private async handleTodoCommand(): Promise<void> {
+		try {
+			const result = await scanTodos(this.sessionManager.getCwd());
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(new Text(formatTodos(result), 1, 0));
+			this.ui.requestRender();
+		} catch (error) {
+			this.showError(`Failed to scan TODO comments: ${error instanceof Error ? error.message : String(error)}`);
+		}
+	}
+
 	private handleStartupSubmit(text: string): void {
 		this.editor.setText(text);
 		this.showStatus("Startup is still in progress");
@@ -3265,6 +3277,11 @@ export class InteractiveMode {
 			if (text === "/changelog") {
 				this.handleChangelogCommand();
 				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo") {
+				this.editor.setText("");
+				await this.handleTodoCommand();
 				return;
 			}
 			if (text === "/hotkeys") {
