@@ -448,6 +448,7 @@ export class AgentSession {
 	private _pendingToolNames = new Set<string>();
 	private _usesDefaultTools: boolean;
 	private _defaultToolModifiers: string[];
+	private _todoItems: string[] = [];
 	/** Matches the `--tools` entries: tool names or patterns. */
 	private _allowedTools?: (name: string) => boolean;
 	/**
@@ -2062,6 +2063,42 @@ export class AgentSession {
 		}
 		const expandPromptTemplates = options?.expandPromptTemplates ?? true;
 		const preflightResult = options?.preflightResult;
+
+		// Handle built-in /todo command
+		if (expandPromptTemplates && text.startsWith("/todo")) {
+			const todoMatch = text.match(/^\/todo(?:\s+(.+))?$/);
+			if (todoMatch) {
+				const todoText = todoMatch[1];
+				if (todoText) {
+					// Add item to todo list
+					this._todoItems.push(todoText);
+					this._emitEvent({
+						type: "message",
+						role: "assistant",
+						content: `Added to todo: ${todoText}`,
+					});
+				} else {
+					// List all todo items
+					if (this._todoItems.length === 0) {
+						this._emitEvent({
+							type: "message",
+							role: "assistant",
+							content: "Todo list is empty.",
+						});
+					} else {
+						const list = this._todoItems.map((item, i) => `${i + 1}. ${item}`).join("\n");
+						this._emitEvent({
+							type: "message",
+							role: "assistant",
+							content: `Todo list:\n${list}`,
+						});
+					}
+				}
+				preflightResult?.("handled");
+				return;
+			}
+		}
+
 		// Handle extension commands first (execute immediately, even during streaming)
 		// Extension commands manage their own LLM interaction via pi.sendMessage()
 		if (expandPromptTemplates && text.startsWith("/")) {
