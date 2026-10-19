@@ -4,6 +4,7 @@
 
 ### Added
 
+- Added `/todo` slash command to add (`/todo add <text>`), list (`/todo`, `/todo list`) and complete (`/todo done <number>`) todo items for the current interactive session. Todos are kept in memory and are not saved with the session file.
 - Added a Models Configuration reference generated from the `models.json` schema, listing all provider, model, model override, and compatibility fields ([#10790](https://github.com/earendil-works/pi/issues/10790))
 
 ### Changed
