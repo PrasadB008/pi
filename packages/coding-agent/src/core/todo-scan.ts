@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import type { Dirent } from "node:fs";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { promisify } from "node:util";
@@ -59,7 +60,7 @@ async function listWithGit(cwd: string): Promise<string[] | undefined> {
 async function listWithWalk(root: string): Promise<string[]> {
 	const files: string[] = [];
 	const visit = async (dir: string): Promise<void> => {
-		let entries;
+		let entries: Dirent[];
 		try {
 			entries = await readdir(dir, { withFileTypes: true });
 		} catch {
