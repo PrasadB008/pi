@@ -22,7 +22,7 @@ export interface ScanTodosOptions {
 const IGNORED_DIRS = new Set([".git", "node_modules", "dist", "build", "coverage", ".next", ".cache", "target"]);
 
 // A marker must follow a comment opener so that identifiers or strings like "todoList" are not matched.
-const TODO_PATTERN = /(?:\/\/|\/\*+|#|--|;|<!--|^\s*\*)\s*(TODO|FIXME)\b[:(\s-]*(.*)$/i;
+const TODO_PATTERN = /(?:\/\/|\/\*+|#|--|;|<!--|^\s*\*)\s*(TODO|FIXME)\b(?:\([^)]*\))?[:\s-]*(.*)$/i;
 
 function looksBinary(content: string): boolean {
 	return content.includes("\u0000");
