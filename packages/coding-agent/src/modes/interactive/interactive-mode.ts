@@ -117,6 +117,7 @@ import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
+import { formatTodos, scanTodos } from "../../core/todo-scan.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
@@ -3198,6 +3199,13 @@ export class InteractiveMode {
 		this.showStatus("Startup is still in progress");
 	}
 
+	private handleTodoCommand(): void {
+		const { items, truncated } = scanTodos(this.session.sessionManager.getCwd());
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new Text(formatTodos(items, truncated), 1, 0));
+		this.ui.requestRender();
+	}
+
 	private setupEditorSubmitHandler(): void {
 		this.defaultEditor.onSubmit = async (text: string) => {
 			text = text.trim();
@@ -3265,6 +3273,11 @@ export class InteractiveMode {
 			if (text === "/changelog") {
 				this.handleChangelogCommand();
 				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo") {
+				this.editor.setText("");
+				this.handleTodoCommand();
 				return;
 			}
 			if (text === "/hotkeys") {
