@@ -434,6 +434,9 @@ export class AgentSession {
 	private _isEmittingAgentSettled = false;
 	private readonly _deferredSettledActions: Array<() => Promise<void>> = [];
 
+	// Todo list for the session
+	private _todoItems: string[] = [];
+
 	private _resourceLoader: ResourceLoader;
 	private _customTools: ToolDefinition[];
 	private _baseToolDefinitions: Map<string, ToolDefinition> = new Map();
@@ -2148,6 +2151,33 @@ export class AgentSession {
 		const spaceIndex = text.indexOf(" ");
 		const commandName = spaceIndex === -1 ? text.slice(1) : text.slice(1, spaceIndex);
 		const args = spaceIndex === -1 ? "" : text.slice(spaceIndex + 1);
+
+		// Handle built-in /todo command
+		if (commandName === "todo") {
+			if (args.trim()) {
+				// Add item to todo list
+				this._todoItems.push(args.trim());
+				await this._extensionRunner.sendMessage({
+					type: "assistant",
+					content: [{ type: "text", text: `Added to todo: ${args.trim()}` }],
+				});
+			} else {
+				// List all todo items
+				if (this._todoItems.length === 0) {
+					await this._extensionRunner.sendMessage({
+						type: "assistant",
+						content: [{ type: "text", text: "Todo list is empty." }],
+					});
+				} else {
+					const listText = this._todoItems.map((item, i) => `${i + 1}. ${item}`).join("\n");
+					await this._extensionRunner.sendMessage({
+						type: "assistant",
+						content: [{ type: "text", text: `Todo list:\n${listText}` }],
+					});
+				}
+			}
+			return true;
+		}
 
 		const command = this._extensionRunner.getCommand(commandName);
 		if (!command) return false;
