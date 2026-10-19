@@ -117,6 +117,14 @@ import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
+import {
+	addTodo,
+	completeTodo,
+	formatTodos,
+	getTodosFromEntries,
+	parseTodoArgs,
+	TODO_ENTRY_TYPE,
+} from "../../core/todo.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
@@ -3312,6 +3320,11 @@ export class InteractiveMode {
 				const customInstructions = text.startsWith("/compact ") ? text.slice(9).trim() : undefined;
 				this.editor.setText("");
 				await this.handleCompactCommand(customInstructions);
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text.slice("/todo".length));
+				this.editor.setText("");
 				return;
 			}
 			if (text === "/reload") {
@@ -6705,6 +6718,40 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(args: string): void {
+		const command = parseTodoArgs(args);
+		if (command.type === "invalid") {
+			this.showWarning(command.message);
+			return;
+		}
+
+		const todos = getTodosFromEntries(this.sessionManager.getBranch());
+		let message: string;
+		if (command.type === "list") {
+			message = formatTodos(todos);
+		} else if (command.type === "add") {
+			const result = addTodo(todos, command.text);
+			this.sessionManager.appendCustomEntry(TODO_ENTRY_TYPE, result.todos);
+			message = `Added todo ${result.added.id}: ${result.added.text}`;
+		} else {
+			const result = completeTodo(todos, command.id);
+			if (!result) {
+				this.showWarning(`No todo with number ${command.id}`);
+				return;
+			}
+			if (result.alreadyDone) {
+				message = `Todo ${command.id} is already done`;
+			} else {
+				this.sessionManager.appendCustomEntry(TODO_ENTRY_TYPE, result.todos);
+				message = `Completed todo ${command.id}: ${result.completed.text}`;
+			}
+		}
+
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", message), 1, 0));
 		this.ui.requestRender();
 	}
 
