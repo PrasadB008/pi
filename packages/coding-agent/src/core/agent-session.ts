@@ -483,6 +483,9 @@ export class AgentSession {
 	/** Prompt options after before_agent_start mutations for the active run. */
 	private _runSystemPromptOptions?: NormalizedBuildSystemPromptOptions;
 
+	// Session todo list
+	private _todoList: string[] = [];
+
 	constructor(config: AgentSessionConfig) {
 		this.agent = config.agent;
 		this.sessionManager = config.sessionManager;
@@ -2062,9 +2065,15 @@ export class AgentSession {
 		}
 		const expandPromptTemplates = options?.expandPromptTemplates ?? true;
 		const preflightResult = options?.preflightResult;
-		// Handle extension commands first (execute immediately, even during streaming)
-		// Extension commands manage their own LLM interaction via pi.sendMessage()
+		// Handle builtin commands first (execute immediately, even during streaming)
 		if (expandPromptTemplates && text.startsWith("/")) {
+			const builtinHandled = this._tryHandleBuiltinCommand(text);
+			if (builtinHandled) {
+				preflightResult?.("handled");
+				return;
+			}
+			// Handle extension commands (execute immediately, even during streaming)
+			// Extension commands manage their own LLM interaction via pi.sendMessage()
 			const handled = await this._tryExecuteExtensionCommand(text);
 			if (handled) {
 				// Extension command executed, no prompt to send
@@ -2167,6 +2176,47 @@ export class AgentSession {
 			});
 			return true;
 		}
+	}
+
+	/**
+	 * Try to handle a builtin command. Returns true if command was handled.
+	 */
+	private _tryHandleBuiltinCommand(text: string): boolean {
+		// Parse command name and args
+		const spaceIndex = text.indexOf(" ");
+		const commandName = spaceIndex === -1 ? text.slice(1) : text.slice(1, spaceIndex);
+		const args = spaceIndex === -1 ? "" : text.slice(spaceIndex + 1);
+
+		if (commandName === "todo") {
+			if (args.trim()) {
+				// Add to todo list
+				this._todoList.push(args.trim());
+				this._extensionRunner.emitError({
+					extensionPath: "builtin:todo",
+					event: "command",
+					error: `Added to todo: ${args.trim()}`,
+				});
+			} else {
+				// List todos
+				if (this._todoList.length === 0) {
+					this._extensionRunner.emitError({
+						extensionPath: "builtin:todo",
+						event: "command",
+						error: "Todo list is empty",
+					});
+				} else {
+					const todoText = this._todoList.map((item, i) => `${i + 1}. ${item}`).join("\n");
+					this._extensionRunner.emitError({
+						extensionPath: "builtin:todo",
+						event: "command",
+						error: `Todo list:\n${todoText}`,
+					});
+				}
+			}
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -3337,7 +3387,10 @@ export class AgentSession {
 
 	private buildExtensionResourcePaths(entries: Array<{ path: string; extensionPath: string }>): Array<{
 		path: string;
-		metadata: { source: string; scope: "temporary"; origin: "top-level"; baseDir?: string };
+		source: string;
+		scope: "temporary";
+		origin: "top-level";
+		baseDir?: string;
 	}> {
 		return entries.map((entry) => {
 			const source = this.getExtensionSourceLabel(entry.extensionPath);
