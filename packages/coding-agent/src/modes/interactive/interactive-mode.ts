@@ -535,6 +535,9 @@ export class InteractiveMode {
 	// Track pending bash components (shown in pending area, moved to chat on submit)
 	private pendingBashComponents: BashExecutionComponent[] = [];
 
+	// Todo list for the session
+	private todoItems: string[] = [];
+
 	// Auto-compaction state
 	private autoCompactionEscapeHandler?: () => void;
 
@@ -3336,6 +3339,11 @@ export class InteractiveMode {
 			}
 			if (text === "/resume") {
 				this.showSessionSelector();
+				this.editor.setText("");
+				return;
+			}
+			if (text.startsWith("/todo")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6986,6 +6994,30 @@ export class InteractiveMode {
 		this.chatContainer.addChild(
 			new ThemedText(() => `${theme.fg("accent", "✓ Debug log written")}\n${theme.fg("muted", debugLogPath)}`, 1, 1),
 		);
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		const args = text.slice(5).trim(); // Remove "/todo" prefix
+
+		if (!args) {
+			// List all todo items
+			if (this.todoItems.length === 0) {
+				this.chatContainer.addChild(new Spacer(1));
+				this.chatContainer.addChild(new ThemedText(() => `${theme.fg("muted", "No todo items")}`, 1, 1));
+			} else {
+				this.chatContainer.addChild(new Spacer(1));
+				const todoText = this.todoItems
+					.map((item, idx) => `${theme.fg("accent", `${idx + 1}.`)} ${item}`)
+					.join("\n");
+				this.chatContainer.addChild(new ThemedText(() => todoText, 1, 1));
+			}
+		} else {
+			// Add item to todo list
+			this.todoItems.push(args);
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(new ThemedText(() => `${theme.fg("accent", "✓ Added to todo")}: ${args}`, 1, 1));
+		}
 		this.ui.requestRender();
 	}
 
