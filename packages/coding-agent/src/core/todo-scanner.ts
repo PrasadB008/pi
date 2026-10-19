@@ -39,7 +39,8 @@ const DEFAULT_MAX_RESULTS = 500;
 const DEFAULT_MAX_FILE_SIZE = 1024 * 1024;
 
 // A TODO marker directly after a comment opener: //, /*, *, #, --, <!--
-const TODO_PATTERN = /(?:\/\/|\/\*+|<!--|#|--|^\s*\*)\s*TODO\b[:(]?\s*(.*)$/;
+// Optionally followed by "(owner)" and/or ":".
+const TODO_PATTERN = /(?:\/\/|\/\*+|<!--|#|--|^\s*\*)\s*TODO\b(?:\([^)]*\))?:?\s*(.*)$/;
 
 /** Returns the TODO text if the line contains a TODO comment, otherwise undefined. */
 export function matchTodoLine(line: string): string | undefined {
