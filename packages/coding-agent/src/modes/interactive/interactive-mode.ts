@@ -508,6 +508,9 @@ export class InteractiveMode {
 	// Tool execution tracking: toolCallId -> component
 	private pendingTools = new Map<string, ToolExecutionComponent>();
 
+	// Todo list for the session
+	private todoList: string[] = [];
+
 	// Tool output expansion state
 	private toolOutputExpanded = false;
 
@@ -3342,6 +3345,12 @@ export class InteractiveMode {
 			if (text === "/quit") {
 				this.editor.setText("");
 				await this.shutdown();
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : "";
+				this.editor.setText("");
+				await this.handleTodoCommand(todoText);
 				return;
 			}
 
@@ -7102,6 +7111,22 @@ export class InteractiveMode {
 			await this.session.compact(customInstructions);
 		} catch {
 			// Ignore, will be emitted as an event
+		}
+	}
+
+	private async handleTodoCommand(todoText: string): Promise<void> {
+		if (todoText) {
+			// Add item to todo list
+			this.todoList.push(todoText);
+			this.showInfo(`Added to todo: ${todoText}`);
+		} else {
+			// List all todo items
+			if (this.todoList.length === 0) {
+				this.showInfo("Todo list is empty");
+			} else {
+				const todoItems = this.todoList.map((item, index) => `${index + 1}. ${item}`).join("\n");
+				this.showInfo(`Todo list:\n${todoItems}`);
+			}
 		}
 	}
 
