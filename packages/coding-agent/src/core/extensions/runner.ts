@@ -393,6 +393,7 @@ export class ExtensionRunner {
 	private switchSessionHandler: SwitchSessionHandler = async () => ({ cancelled: false });
 	private reloadHandler: ReloadHandler = async () => {};
 	private shutdownHandler: ShutdownHandler = () => {};
+	private todoList: string[] = [];
 	private shortcutDiagnostics: ResourceDiagnostic[] = [];
 	private commandDiagnostics: ResourceDiagnostic[] = [];
 	private staleMessage: string | undefined;
@@ -1029,6 +1030,18 @@ export class ExtensionRunner {
 		context.reload = () => {
 			this.assertActive();
 			return this.reloadHandler();
+		};
+		context.todo = (text?: string) => {
+			this.assertActive();
+			if (text) {
+				this.todoList.push(text);
+				return `Added to todo: ${text}`;
+			} else {
+				if (this.todoList.length === 0) {
+					return "Todo list is empty";
+				}
+				return this.todoList.map((item, i) => `${i + 1}. ${item}`).join("\n");
+			}
 		};
 		return context;
 	}
