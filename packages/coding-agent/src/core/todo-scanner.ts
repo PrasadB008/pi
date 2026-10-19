@@ -40,7 +40,7 @@ const IGNORED_DIRS = new Set([
 
 // A marker counts only when it follows a comment opener, so strings such as
 // `const label = "TODO"` and identifiers such as `todoList` are not reported.
-const TODO_PATTERN = /(?:\/\/|\/\*+|#|--|<!--|^\s*\*)\s*(TODO|FIXME)\b[:(]?\s*(.*)$/;
+const TODO_PATTERN = /(?:\/\/|\/\*+|#|--|<!--|^\s*\*)\s*(TODO|FIXME)\b(?:\([^)]*\))?:?\s*(.*)$/;
 
 function isBinary(buffer: Buffer): boolean {
 	return buffer.subarray(0, 8000).includes(0);
