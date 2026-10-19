@@ -117,6 +117,7 @@ import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
+import { TodoList } from "../../core/todo-list.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
@@ -3193,6 +3194,18 @@ export class InteractiveMode {
 		}
 	}
 
+	private readonly todoList = new TodoList();
+
+	private handleTodoCommand(args: string): void {
+		const result = this.todoList.run(args);
+		if (!result.ok) {
+			this.showError(result.message);
+			return;
+		}
+		this.chatContainer.addChild(new Text(result.message, 1, 0));
+		this.ui.requestRender();
+	}
+
 	private handleStartupSubmit(text: string): void {
 		this.editor.setText(text);
 		this.showStatus("Startup is still in progress");
@@ -3254,6 +3267,11 @@ export class InteractiveMode {
 			}
 			if (text === "/name" || text.startsWith("/name ")) {
 				this.handleNameCommand(text);
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text.slice("/todo".length));
 				this.editor.setText("");
 				return;
 			}
