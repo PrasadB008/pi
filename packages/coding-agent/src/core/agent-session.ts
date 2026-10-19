@@ -469,6 +469,9 @@ export class AgentSession {
 	private _modelRuntime: ModelRuntime;
 	private _cacheWarmer?: Pick<CacheWarmer, "cancel" | "status" | "onAgentSettled" | "onModeChanged" | "onWarmed">;
 
+	// Todo list for the session
+	private _todos: string[] = [];
+
 	// Tool registry for extension getTools/setTools
 	private _toolRegistry: Map<string, AgentTool> = new Map();
 	/** Created on the first `ctx.executeTool()` call. */
@@ -2149,6 +2152,12 @@ export class AgentSession {
 		const commandName = spaceIndex === -1 ? text.slice(1) : text.slice(1, spaceIndex);
 		const args = spaceIndex === -1 ? "" : text.slice(spaceIndex + 1);
 
+		// Handle builtin commands
+		if (commandName === "todo") {
+			await this._handleTodoCommand(args);
+			return true;
+		}
+
 		const command = this._extensionRunner.getCommand(commandName);
 		if (!command) return false;
 
@@ -2166,6 +2175,41 @@ export class AgentSession {
 				error: err instanceof Error ? err.message : String(err),
 			});
 			return true;
+		}
+	}
+
+	/**
+	 * Handle the /todo command: add items to the todo list or list existing items.
+	 * /todo <text> - adds text to the todo list
+	 * /todo - lists all todo items
+	 */
+	private async _handleTodoCommand(args: string): Promise<void> {
+		const trimmedArgs = args.trim();
+
+		if (trimmedArgs === "") {
+			// List todos
+			if (this._todos.length === 0) {
+				this._extensionRunner.emitError({
+					extensionPath: "command:todo",
+					event: "command",
+					error: "No todos yet. Use /todo <text> to add one.",
+				});
+			} else {
+				const todoList = this._todos.map((item, index) => `${index + 1}. ${item}`).join("\n");
+				this._extensionRunner.emitError({
+					extensionPath: "command:todo",
+					event: "command",
+					error: `Todos:\n${todoList}`,
+				});
+			}
+		} else {
+			// Add todo
+			this._todos.push(trimmedArgs);
+			this._extensionRunner.emitError({
+				extensionPath: "command:todo",
+				event: "command",
+				error: `Added todo: "${trimmedArgs}" (${this._todos.length} total)`,
+			});
 		}
 	}
 
