@@ -4,6 +4,7 @@
 
 ### Added
 
+- Added the `/todo` slash command to add (`/todo add <text>`), list (`/todo`), and complete (`/todo done <number>`) todo items for the current session. Items are stored in the session file and follow the session branch.
 - Added a Models Configuration reference generated from the `models.json` schema, listing all provider, model, model override, and compatibility fields ([#10790](https://github.com/earendil-works/pi/issues/10790))
 
 ### Changed
