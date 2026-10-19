@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { type Dirent, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 export interface TodoItem {
@@ -56,7 +56,7 @@ export function scanTodos(root: string, options: TodoScanOptions = {}): TodoScan
 
 	const walk = (dir: string): void => {
 		if (truncated) return;
-		let entries;
+		let entries: Dirent[];
 		try {
 			entries = readdirSync(dir, { withFileTypes: true });
 		} catch {
