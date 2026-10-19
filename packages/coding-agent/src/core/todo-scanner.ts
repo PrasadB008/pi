@@ -1,3 +1,4 @@
+import type { Dirent } from "node:fs";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join, relative } from "node:path";
 
@@ -57,7 +58,7 @@ export async function scanTodos(rootDir: string, options: TodoScanOptions = {}):
 	let truncated = false;
 
 	async function walk(dir: string): Promise<void> {
-		let entries;
+		let entries: Dirent[];
 		try {
 			entries = await readdir(dir, { withFileTypes: true });
 		} catch {
