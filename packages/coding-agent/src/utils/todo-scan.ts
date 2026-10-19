@@ -22,7 +22,7 @@ const IGNORED_DIRS = new Set([".git", "node_modules", "dist", "build", "coverage
 const MAX_FILE_BYTES = 512 * 1024;
 const MAX_LINE_LENGTH = 500;
 // Marker must follow a comment opener (//, #, /*, *, --, <!--, ;) so prose and identifiers are not matched.
-const TODO_PATTERN = /(?:\/\/|\/\*|\*|#|--|<!--|;)\s*(TODO|FIXME)\b[:(\s-]*(.*)$/;
+const TODO_PATTERN = /(?:\/\/|\/\*|\*|#|--|<!--|;)\s*(TODO|FIXME)\b(?:\([^)]*\))?[:\s-]*(.*)$/;
 
 export function parseTodoLine(line: string): { tag: string; text: string } | undefined {
 	if (line.length > MAX_LINE_LENGTH) return undefined;
