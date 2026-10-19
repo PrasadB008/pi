@@ -5,6 +5,7 @@
 ### Added
 
 - Added a Models Configuration reference generated from the `models.json` schema, listing all provider, model, model override, and compatibility fields ([#10790](https://github.com/earendil-works/pi/issues/10790))
+- Added `/todo` slash command that lists TODO and FIXME comments in the current working directory, skipping `node_modules`, `.git`, build output, and binary files
 
 ### Changed
 
