@@ -119,6 +119,7 @@ import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
+import { formatTodos, scanTodos } from "../../core/todo-scanner.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
 import { getUsageCostBreakdown } from "../../core/usage-totals.ts";
 import { addMcpServerConfig, loadMcpConfig } from "../../extensions/mcp/config.ts";
@@ -3339,6 +3340,11 @@ export class InteractiveMode {
 				this.editor.setText("");
 				return;
 			}
+			if (text === "/todo") {
+				this.editor.setText("");
+				await this.handleTodoCommand();
+				return;
+			}
 			if (text === "/quit") {
 				this.editor.setText("");
 				await this.shutdown();
@@ -3397,6 +3403,13 @@ export class InteractiveMode {
 			}
 			this.editor.addToHistory?.(text);
 		};
+	}
+
+	private async handleTodoCommand(): Promise<void> {
+		const items = await scanTodos(this.sessionManager.getCwd());
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new Text(formatTodos(items), 1, 0));
+		this.ui.requestRender();
 	}
 
 	private subscribeToAgent(): void {
