@@ -449,6 +449,7 @@ export interface InteractiveModeOptions {
 }
 
 export class InteractiveMode {
+	private todoItems: Array<{ text: string; done: boolean }> = [];
 	private runtimeHost: AgentSessionRuntime;
 	private renderer: TuiMainScreen | TuiAltScreen;
 	private ui: TUI;
@@ -3254,6 +3255,11 @@ export class InteractiveMode {
 			}
 			if (text === "/name" || text.startsWith("/name ")) {
 				this.handleNameCommand(text);
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text.slice("/todo".length).trim());
 				this.editor.setText("");
 				return;
 			}
@@ -6705,6 +6711,50 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(args: string): void {
+		const [subcommand = "", ...rest] = args.split(/\s+/);
+		const argument = rest.join(" ").trim();
+		const usage = "Usage: /todo [add <text> | done <n> | rm <n> | clear]";
+
+		const parseIndex = (): number | undefined => {
+			const index = Number.parseInt(argument, 10) - 1;
+			if (!/^\d+$/.test(argument) || index < 0 || index >= this.todoItems.length) {
+				this.showWarning(`No todo item ${JSON.stringify(argument)}. ${usage}`);
+				return undefined;
+			}
+			return index;
+		};
+
+		if (subcommand === "add") {
+			if (!argument) {
+				this.showWarning(usage);
+				return;
+			}
+			this.todoItems.push({ text: argument, done: false });
+		} else if (subcommand === "done") {
+			const index = parseIndex();
+			if (index === undefined) return;
+			this.todoItems[index].done = true;
+		} else if (subcommand === "rm") {
+			const index = parseIndex();
+			if (index === undefined) return;
+			this.todoItems.splice(index, 1);
+		} else if (subcommand === "clear") {
+			this.todoItems = [];
+		} else if (subcommand !== "") {
+			this.showWarning(usage);
+			return;
+		}
+
+		const lines =
+			this.todoItems.length === 0
+				? ["Todo list is empty"]
+				: ["Todo:", ...this.todoItems.map((item, i) => `${i + 1}. [${item.done ? "x" : " "}] ${item.text}`)];
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", lines.join("\n")), 1, 0));
 		this.ui.requestRender();
 	}
 
