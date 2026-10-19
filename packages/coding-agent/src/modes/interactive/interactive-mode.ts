@@ -487,6 +487,7 @@ export class InteractiveMode {
 	private readonly defaultWorkingMessage = "Working";
 	private readonly defaultHiddenThinkingLabel = "Thinking...";
 	private hiddenThinkingLabel = this.defaultHiddenThinkingLabel;
+	private sessionTodos: string[] | undefined;
 
 	private lastSigintTime = 0;
 	private lastEscapeTime = 0;
@@ -3317,6 +3318,12 @@ export class InteractiveMode {
 			if (text === "/reload") {
 				this.editor.setText("");
 				await this.handleReloadCommand();
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : "";
+				this.editor.setText("");
+				this.handleTodoCommand(todoText);
 				return;
 			}
 			if (text === "/debug") {
@@ -6986,6 +6993,31 @@ export class InteractiveMode {
 		this.chatContainer.addChild(
 			new ThemedText(() => `${theme.fg("accent", "✓ Debug log written")}\n${theme.fg("muted", debugLogPath)}`, 1, 1),
 		);
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		if (!this.sessionTodos) {
+			this.sessionTodos = [];
+		}
+
+		if (text) {
+			// Add item to todo list
+			this.sessionTodos.push(text);
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(new ThemedText(() => `${theme.fg("accent", "✓ Added to todo")}: ${text}`, 1, 1));
+		} else {
+			// List all todos
+			this.chatContainer.addChild(new Spacer(1));
+			if (this.sessionTodos.length === 0) {
+				this.chatContainer.addChild(new ThemedText(() => `${theme.fg("muted", "No todos yet")}`, 1, 1));
+			} else {
+				const todoList = this.sessionTodos
+					.map((item, idx) => `${theme.fg("accent", `${idx + 1}.`)} ${item}`)
+					.join("\n");
+				this.chatContainer.addChild(new ThemedText(() => todoList, 1, 1));
+			}
+		}
 		this.ui.requestRender();
 	}
 
