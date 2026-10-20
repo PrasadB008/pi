@@ -4,6 +4,7 @@
 
 ### Added
 
+- Added a built-in `/todo` command for a per-session todo list: `/todo` lists items, `/todo <text>` adds one, `/todo done <id>` toggles one, and `/todo clear` removes all. The list is stored in session entries and follows branches and resume.
 - Added a Models Configuration reference generated from the `models.json` schema, listing all provider, model, model override, and compatibility fields ([#10790](https://github.com/earendil-works/pi/issues/10790))
 
 ### Changed
