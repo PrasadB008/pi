@@ -117,6 +117,7 @@ import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
+import { applyTodoCommand, formatTodoList, type TodoItem } from "../../core/todo-list.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
@@ -455,7 +456,7 @@ export class InteractiveMode {
 	private mainScreenRenderState: TuiMainScreenRenderState | undefined;
 	private loadedResourcesContainer: Container;
 	private chatContainer: Container;
-	private todoItems: Array<{ text: string; done: boolean }> = [];
+	private todoItems: TodoItem[] = [];
 	private documentContainer: Container;
 	private transcriptScrollView: TuiLayouts.ScrollView | undefined;
 	private fullscreenLayoutRoot: Component | undefined;
@@ -6720,51 +6721,25 @@ export class InteractiveMode {
 			this.chatContainer.addChild(new ThemedText(() => message, 1, 0));
 			this.ui.requestRender();
 		};
-		const showList = (): void => {
-			if (this.todoItems.length === 0) {
-				showMessage(theme.fg("dim", "No todos. Add one with /todo <text>"));
-				return;
-			}
-			const lines = this.todoItems.map((item, index) => {
-				const mark = item.done ? "[x]" : "[ ]";
-				const line = `${index + 1}. ${mark} ${item.text}`;
-				return item.done ? theme.fg("dim", line) : line;
-			});
-			showMessage(lines.join("\n"));
-		};
-		const parseIndex = (value: string, command: string): number | undefined => {
-			const number = Number(value);
-			if (!/^\d+$/.test(value) || number < 1 || number > this.todoItems.length) {
-				this.showWarning(`Usage: /todo ${command} <n> (n between 1 and ${this.todoItems.length})`);
-				return undefined;
-			}
-			return number - 1;
-		};
 
-		if (!args) {
-			showList();
+		const result = applyTodoCommand(this.todoItems, args);
+		if (!result.ok) {
+			this.showWarning(result.error);
 			return;
 		}
-		if (args === "clear") {
-			this.todoItems = [];
-			showMessage(theme.fg("dim", "Todo list cleared"));
+		this.todoItems = result.items;
+		if (result.notice) {
+			showMessage(theme.fg("dim", result.notice));
 			return;
 		}
-		const match = /^(done|rm)\s*(.*)$/.exec(args);
-		if (match) {
-			const command = match[1];
-			const index = parseIndex(match[2].trim(), command);
-			if (index === undefined) return;
-			if (command === "done") {
-				this.todoItems[index].done = true;
-			} else {
-				this.todoItems.splice(index, 1);
-			}
-			showList();
+		if (this.todoItems.length === 0) {
+			showMessage(theme.fg("dim", "No todos. Add one with /todo <text>"));
 			return;
 		}
-		this.todoItems.push({ text: args, done: false });
-		showList();
+		const lines = formatTodoList(this.todoItems).map((line, index) =>
+			this.todoItems[index].done ? theme.fg("dim", line) : line,
+		);
+		showMessage(lines.join("\n"));
 	}
 
 	private handleSessionCommand(): void {
