@@ -24,6 +24,7 @@ Extensions, prompt templates, and skills can add commands. The command menu in P
 | `/resume` | Switch to another saved session |
 | `/name [name]` | Set the session display name, or show the current name when omitted |
 | `/session` | Show current session information and statistics |
+| `/todo [text]` | Add an item to the in-memory todo list for this session, or list items when text is omitted. The list is cleared by `/new` and is not saved |
 | `/tree` | Navigate the session tree |
 | `/fork` | Create a new session from an earlier user message |
 | `/clone` | Duplicate the current session at its current position |
