@@ -478,6 +478,8 @@ export class InteractiveMode {
 	private isInitialized = false;
 	private onInputCallback?: (text: string) => void;
 	private pendingUserInputs: string[] = [];
+	/** Session-local todo list managed by /todo. Not persisted. */
+	private todoItems: Array<{ text: string; done: boolean }> = [];
 	private activeStatusIndicator: StatusIndicator | undefined = undefined;
 	private activeWorkingIndicatorEmbedded = false;
 	private readonly idleStatus = new IdleStatus();
@@ -3254,6 +3256,11 @@ export class InteractiveMode {
 			}
 			if (text === "/name" || text.startsWith("/name ")) {
 				this.handleNameCommand(text);
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6705,6 +6712,49 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		const args = text.replace(/^\/todo\s*/, "").trim();
+		const [subcommand = "", ...rest] = args.split(/\s+/);
+		const argument = rest.join(" ").trim();
+		const usage = "Usage: /todo [add <text> | done <n> | clear]";
+
+		if (subcommand === "add") {
+			if (!argument) {
+				this.showWarning(usage);
+				return;
+			}
+			this.todoItems.push({ text: argument, done: false });
+		} else if (subcommand === "done") {
+			const index = Number.parseInt(argument, 10) - 1;
+			const item = this.todoItems[index];
+			if (!item) {
+				this.showWarning(`No todo item ${argument || "(missing number)"}. ${usage}`);
+				return;
+			}
+			item.done = true;
+		} else if (subcommand === "clear") {
+			this.todoItems = [];
+		} else if (subcommand !== "") {
+			this.showWarning(usage);
+			return;
+		}
+
+		const items = this.todoItems.map((item) => ({ ...item }));
+		const renderTodos = (): string => {
+			if (items.length === 0) {
+				return theme.fg("dim", "No todo items. Use /todo add <text>.");
+			}
+			const lines = items.map((item, i) => {
+				const line = `${i + 1}. [${item.done ? "x" : " "}] ${item.text}`;
+				return item.done ? theme.fg("dim", line) : line;
+			});
+			return `${theme.bold("Todo")}\n\n${lines.join("\n")}`;
+		};
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(renderTodos, 1, 0));
 		this.ui.requestRender();
 	}
 
