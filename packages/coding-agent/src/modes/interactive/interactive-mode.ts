@@ -116,6 +116,7 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
+import { applyTodoAction, getTodoItems, parseTodoArgs, TODO_ENTRY_TYPE } from "../../core/todo.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
@@ -3259,6 +3260,11 @@ export class InteractiveMode {
 			}
 			if (text === "/session") {
 				this.handleSessionCommand();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6705,6 +6711,32 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		const action = parseTodoArgs(text.replace(/^\/todo\s*/, ""));
+		if (action.type === "invalid") {
+			this.showWarning(action.usage);
+			return;
+		}
+		const items = getTodoItems(this.sessionManager.getBranch());
+		let current = items;
+		if (action.type !== "list") {
+			const next = applyTodoAction(items, action);
+			if (typeof next === "string") {
+				this.showWarning(next);
+				return;
+			}
+			this.sessionManager.appendCustomEntry(TODO_ENTRY_TYPE, next);
+			current = next;
+		}
+		const lines =
+			current.length === 0
+				? ["No todo items"]
+				: current.map((item, i) => `${i + 1}. [${item.done ? "x" : " "}] ${item.text}`);
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", lines.join("\n")), 1, 0));
 		this.ui.requestRender();
 	}
 
