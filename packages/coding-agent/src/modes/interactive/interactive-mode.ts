@@ -3257,6 +3257,11 @@ export class InteractiveMode {
 				this.editor.setText("");
 				return;
 			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text.slice("/todo".length).trim());
+				this.editor.setText("");
+				return;
+			}
 			if (text === "/session") {
 				this.handleSessionCommand();
 				this.editor.setText("");
@@ -6706,6 +6711,55 @@ export class InteractiveMode {
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
 		this.ui.requestRender();
+	}
+
+	private todos: Array<{ id: number; text: string; done: boolean }> = [];
+	private nextTodoId = 1;
+
+	private handleTodoCommand(args: string): void {
+		const showLine = (line: string) => {
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(new ThemedText(() => line, 1, 0));
+			this.ui.requestRender();
+		};
+
+		if (!args) {
+			if (this.todos.length === 0) {
+				showLine(theme.fg("dim", "No todos. Add one with /todo <text>"));
+				return;
+			}
+			const lines = this.todos.map((todo) => {
+				const mark = todo.done ? theme.fg("success", "[x]") : theme.fg("dim", "[ ]");
+				const label = todo.done ? theme.fg("dim", todo.text) : todo.text;
+				return `${mark} #${todo.id} ${label}`;
+			});
+			showLine(lines.join("\n"));
+			return;
+		}
+
+		if (args === "clear") {
+			this.todos = [];
+			this.nextTodoId = 1;
+			showLine(theme.fg("dim", "Cleared todos"));
+			return;
+		}
+
+		const doneMatch = args.match(/^done\s+#?(\d+)$/);
+		if (doneMatch) {
+			const id = Number(doneMatch[1]);
+			const todo = this.todos.find((item) => item.id === id);
+			if (!todo) {
+				this.showWarning(`Todo #${id} not found`);
+				return;
+			}
+			todo.done = !todo.done;
+			showLine(theme.fg("dim", `Todo #${id} marked ${todo.done ? "done" : "not done"}`));
+			return;
+		}
+
+		const todo = { id: this.nextTodoId++, text: args, done: false };
+		this.todos.push(todo);
+		showLine(theme.fg("dim", `Added todo #${todo.id}: ${todo.text}`));
 	}
 
 	private handleSessionCommand(): void {
