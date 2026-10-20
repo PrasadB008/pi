@@ -117,6 +117,7 @@ import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
+import { formatTodoList, getTodosFromBranch } from "../../core/todo-list.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
@@ -3254,6 +3255,11 @@ export class InteractiveMode {
 			}
 			if (text === "/name" || text.startsWith("/name ")) {
 				this.handleNameCommand(text);
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo") {
+				this.handleTodoCommand();
 				this.editor.setText("");
 				return;
 			}
@@ -6705,6 +6711,23 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	/**
+	 * Show the todo list kept by the `todo` tool. The latest `todo` tool result on the
+	 * current branch carries the full list in its details.
+	 */
+	private handleTodoCommand(): void {
+		const todos = getTodosFromBranch(this.sessionManager.getBranch());
+		if (todos.length === 0) {
+			this.showStatus("No todos on the current branch");
+			return;
+		}
+
+		const output = formatTodoList(todos);
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", output), 1, 0));
 		this.ui.requestRender();
 	}
 
