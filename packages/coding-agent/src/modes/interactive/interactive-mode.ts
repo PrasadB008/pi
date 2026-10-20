@@ -116,6 +116,14 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
+import {
+	applyTodoCommand,
+	formatTodoList,
+	parseTodoCommand,
+	reconstructTodoState,
+	TODO_ENTRY_TYPE,
+	TODO_USAGE,
+} from "../../core/todo.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
@@ -3245,6 +3253,11 @@ export class InteractiveMode {
 				const hint = text.slice("/bug".length).trim();
 				this.editor.setText("");
 				await this.handleBugCommand(hint ? hint : undefined);
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
+				this.editor.setText("");
 				return;
 			}
 			if (text === "/copy") {
@@ -6705,6 +6718,29 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		const command = parseTodoCommand(text);
+		let state = reconstructTodoState(this.sessionManager.getBranch());
+		let message: string;
+		if (command.action === "invalid") {
+			this.showWarning(`${command.message}\n${TODO_USAGE}`);
+			return;
+		}
+		if (command.action === "list") {
+			message = formatTodoList(state);
+		} else {
+			const result = applyTodoCommand(state, command);
+			if (result.changed) {
+				state = result.state;
+				this.sessionManager.appendCustomEntry(TODO_ENTRY_TYPE, state);
+			}
+			message = result.message;
+		}
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", message), 1, 0));
 		this.ui.requestRender();
 	}
 
