@@ -23,6 +23,7 @@ Extensions, prompt templates, and skills can add commands. The command menu in P
 | `/new` | Start a new session |
 | `/resume` | Switch to another saved session |
 | `/name [name]` | Set the session display name, or show the current name when omitted |
+| `/todo [text \| done <n> \| rm <n> \| clear]` | Show the in-memory todo list, add an item, mark item n done, remove item n, or clear the list. The list is not saved when pi exits |
 | `/session` | Show current session information and statistics |
 | `/tree` | Navigate the session tree |
 | `/fork` | Create a new session from an earlier user message |
