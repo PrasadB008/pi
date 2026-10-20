@@ -116,6 +116,7 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
+import { applyTodoCommand, parseTodoItems, type TodoItem } from "../../core/todo-list.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
@@ -292,6 +293,9 @@ function isUsageSessionEntry(item: RenderSessionItem): item is Extract<SessionEn
 // EIO: tty reads/ioctls from an orphaned background process group, or writes after hangup.
 // ENOTTY: the tty was revoked (macOS) and stdin is no longer a terminal.
 const DEAD_TERMINAL_ERROR_CODES = new Set(["EIO", "EPIPE", "ENOTCONN", "ENOTTY"]);
+
+/** Custom session entry type holding the full /todo list; the latest entry on the branch wins. */
+const TODO_ENTRY_TYPE = "todo-state";
 
 function isDeadTerminalError(error: unknown): boolean {
 	if (!error || typeof error !== "object" || !("code" in error)) {
@@ -3254,6 +3258,11 @@ export class InteractiveMode {
 			}
 			if (text === "/name" || text.startsWith("/name ")) {
 				this.handleNameCommand(text);
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6706,6 +6715,44 @@ export class InteractiveMode {
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
 		this.ui.requestRender();
+	}
+
+	private getTodoItems(): TodoItem[] {
+		const branch = this.sessionManager.getBranch();
+		for (let i = branch.length - 1; i >= 0; i--) {
+			const entry = branch[i];
+			if (entry.type === "custom" && entry.customType === TODO_ENTRY_TYPE) return parseTodoItems(entry.data);
+		}
+		return [];
+	}
+
+	private handleTodoCommand(text: string): void {
+		const args = text.replace(/^\/todo\s*/, "").trim();
+		const items = this.getTodoItems();
+		const showMessage = (message: string): void => {
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(new ThemedText(() => message, 1, 0));
+			this.ui.requestRender();
+		};
+		const save = (next: TodoItem[]): void => {
+			this.sessionManager.appendCustomEntry(TODO_ENTRY_TYPE, { items: next });
+		};
+		const renderList = (list: TodoItem[]): string => {
+			if (list.length === 0) return theme.fg("dim", "No todos. Usage: /todo add <text>");
+			const lines = list.map((item, i) => {
+				const line = `${i + 1}. [${item.done ? "x" : " "}] ${item.text}`;
+				return item.done ? theme.fg("dim", line) : line;
+			});
+			return `${theme.bold("Todos")}\n\n${lines.join("\n")}`;
+		};
+
+		const result = applyTodoCommand(items, args);
+		if (!result.ok) {
+			this.showWarning(result.error);
+			return;
+		}
+		if (result.changed) save(result.items);
+		showMessage(renderList(result.items));
 	}
 
 	private handleSessionCommand(): void {
