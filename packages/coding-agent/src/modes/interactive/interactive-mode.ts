@@ -455,6 +455,7 @@ export class InteractiveMode {
 	private mainScreenRenderState: TuiMainScreenRenderState | undefined;
 	private loadedResourcesContainer: Container;
 	private chatContainer: Container;
+	private todoItems: Array<{ text: string; done: boolean }> = [];
 	private documentContainer: Container;
 	private transcriptScrollView: TuiLayouts.ScrollView | undefined;
 	private fullscreenLayoutRoot: Component | undefined;
@@ -3254,6 +3255,11 @@ export class InteractiveMode {
 			}
 			if (text === "/name" || text.startsWith("/name ")) {
 				this.handleNameCommand(text);
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text.slice("/todo".length).trim());
 				this.editor.setText("");
 				return;
 			}
@@ -6706,6 +6712,45 @@ export class InteractiveMode {
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
 		this.ui.requestRender();
+	}
+
+	private showTodoList(): void {
+		this.chatContainer.addChild(new Spacer(1));
+		if (this.todoItems.length === 0) {
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", "No todos. Add one with /todo <text>"), 1, 0));
+		} else {
+			const lines = this.todoItems.map((item, index) => `${index + 1}. [${item.done ? "x" : " "}] ${item.text}`);
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", lines.join("\n")), 1, 0));
+		}
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(args: string): void {
+		const match = args.match(/^(done|remove|clear)(?:\s+(.*))?$/);
+		if (!match) {
+			if (args) this.todoItems.push({ text: args, done: false });
+			this.showTodoList();
+			return;
+		}
+
+		const [, action, rest] = match;
+		if (action === "clear") {
+			this.todoItems = [];
+			this.showTodoList();
+			return;
+		}
+
+		const index = Number.parseInt(rest ?? "", 10) - 1;
+		if (!/^\d+$/.test(rest?.trim() ?? "") || index < 0 || index >= this.todoItems.length) {
+			this.showWarning(`Usage: /todo ${action} <number from 1 to ${Math.max(this.todoItems.length, 1)}>`);
+			return;
+		}
+		if (action === "done") {
+			this.todoItems[index].done = true;
+		} else {
+			this.todoItems.splice(index, 1);
+		}
+		this.showTodoList();
 	}
 
 	private handleSessionCommand(): void {
