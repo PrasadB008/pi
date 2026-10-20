@@ -115,6 +115,7 @@ import {
 } from "../../core/session-manager.ts";
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
+import { TodoList } from "../../core/todo-list.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
@@ -534,6 +535,7 @@ export class InteractiveMode {
 
 	// Track pending bash components (shown in pending area, moved to chat on submit)
 	private pendingBashComponents: BashExecutionComponent[] = [];
+	private todoList = new TodoList();
 
 	// Auto-compaction state
 	private autoCompactionEscapeHandler?: () => void;
@@ -3212,6 +3214,11 @@ export class InteractiveMode {
 			if (text === "/scoped-models") {
 				this.editor.setText("");
 				await this.showModelsSelector();
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.editor.setText("");
+				this.handleTodoCommand(text.slice(5));
 				return;
 			}
 			if (text === "/model" || text.startsWith("/model ")) {
@@ -6705,6 +6712,37 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(args: string): void {
+		const result = this.todoList.run(args);
+		if (result.kind === "error") {
+			this.showWarning(result.message);
+			return;
+		}
+
+		const renderList = (): string => {
+			const items = this.todoList.getItems();
+			if (items.length === 0) return theme.fg("dim", "No todos. Add one with /todo <text>");
+			return items
+				.map((item, i) => {
+					const mark = item.done ? theme.fg("success", "[x]") : theme.fg("dim", "[ ]");
+					const label = item.done ? theme.fg("dim", item.text) : item.text;
+					return `${mark} ${i + 1}. ${label}`;
+				})
+				.join("\n");
+		};
+
+		let message: string | undefined;
+		if (result.kind === "added") message = `Added todo #${result.index}: ${result.item.text}`;
+		else if (result.kind === "toggled") message = `Completed todo #${result.index}: ${result.item.text}`;
+		else if (result.kind === "cleared") message = `Cleared ${result.count} todo(s)`;
+
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(
+			new ThemedText(() => (message ? `${theme.fg("dim", message)}\n${renderList()}` : renderList()), 1, 0),
+		);
 		this.ui.requestRender();
 	}
 
