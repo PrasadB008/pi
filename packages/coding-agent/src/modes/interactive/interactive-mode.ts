@@ -116,6 +116,7 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
+import { applyTodoCommand, formatTodoLines, type TodoItem } from "../../core/todo.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
@@ -534,6 +535,7 @@ export class InteractiveMode {
 
 	// Track pending bash components (shown in pending area, moved to chat on submit)
 	private pendingBashComponents: BashExecutionComponent[] = [];
+	private todoItems: TodoItem[] = [];
 
 	// Auto-compaction state
 	private autoCompactionEscapeHandler?: () => void;
@@ -3254,6 +3256,11 @@ export class InteractiveMode {
 			}
 			if (text === "/name" || text.startsWith("/name ")) {
 				this.handleNameCommand(text);
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text.slice("/todo".length).trim());
 				this.editor.setText("");
 				return;
 			}
@@ -6705,6 +6712,33 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(args: string): void {
+		const result = applyTodoCommand(this.todoItems, args);
+		if (result.error) {
+			this.showWarning(result.error);
+			return;
+		}
+		this.todoItems = result.items;
+		if (result.cleared) {
+			this.showStatus("Todo list cleared");
+			return;
+		}
+
+		const lines = formatTodoLines(this.todoItems);
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(
+			new ThemedText(
+				() =>
+					lines.length === 0
+						? theme.fg("dim", "Todo list is empty. Usage: /todo <text> | done <n> | clear")
+						: `${theme.bold("Todo")}\n${lines.join("\n")}`,
+				1,
+				0,
+			),
+		);
 		this.ui.requestRender();
 	}
 
