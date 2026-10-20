@@ -115,6 +115,7 @@ import {
 } from "../../core/session-manager.ts";
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
+import { applyTodoCommand, formatTodoList, type TodoItem } from "../../core/todo.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
@@ -466,6 +467,7 @@ export class InteractiveMode {
 	private autocompleteProvider: AutocompleteProvider | undefined;
 	private autocompleteProviderWrappers: AutocompleteProviderFactory[] = [];
 	private fdPath: string | undefined;
+	private todoItems: TodoItem[] = [];
 	private editorContainer: Container;
 	private activeSelectorToken?: object;
 	private activeSelectorDispose?: () => void;
@@ -3254,6 +3256,11 @@ export class InteractiveMode {
 			}
 			if (text === "/name" || text.startsWith("/name ")) {
 				this.handleNameCommand(text);
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6706,6 +6713,31 @@ export class InteractiveMode {
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
 		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		const arg = text.replace(/^\/todo\s*/, "").trim();
+		const showMessage = (message: string) => {
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", message), 1, 0));
+			this.ui.requestRender();
+		};
+
+		const result = applyTodoCommand(this.todoItems, arg);
+		if (result.error) {
+			this.showWarning(result.error);
+			return;
+		}
+		this.todoItems = result.items;
+		if (result.cleared) {
+			showMessage("Todo list cleared");
+			return;
+		}
+		if (this.todoItems.length === 0) {
+			this.showWarning("No todo items. Usage: /todo <text>");
+			return;
+		}
+		showMessage(formatTodoList(this.todoItems));
 	}
 
 	private handleSessionCommand(): void {
