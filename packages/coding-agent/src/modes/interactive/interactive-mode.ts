@@ -455,6 +455,7 @@ export class InteractiveMode {
 	private mainScreenRenderState: TuiMainScreenRenderState | undefined;
 	private loadedResourcesContainer: Container;
 	private chatContainer: Container;
+	private todoItems: Array<{ text: string; done: boolean }> = [];
 	private documentContainer: Container;
 	private transcriptScrollView: TuiLayouts.ScrollView | undefined;
 	private fullscreenLayoutRoot: Component | undefined;
@@ -3254,6 +3255,11 @@ export class InteractiveMode {
 			}
 			if (text === "/name" || text.startsWith("/name ")) {
 				this.handleNameCommand(text);
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text.slice("/todo".length).trim());
 				this.editor.setText("");
 				return;
 			}
@@ -6706,6 +6712,59 @@ export class InteractiveMode {
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
 		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(args: string): void {
+		const showMessage = (message: string): void => {
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(new ThemedText(() => message, 1, 0));
+			this.ui.requestRender();
+		};
+		const showList = (): void => {
+			if (this.todoItems.length === 0) {
+				showMessage(theme.fg("dim", "No todos. Add one with /todo <text>"));
+				return;
+			}
+			const lines = this.todoItems.map((item, index) => {
+				const mark = item.done ? "[x]" : "[ ]";
+				const line = `${index + 1}. ${mark} ${item.text}`;
+				return item.done ? theme.fg("dim", line) : line;
+			});
+			showMessage(lines.join("\n"));
+		};
+		const parseIndex = (value: string, command: string): number | undefined => {
+			const number = Number(value);
+			if (!/^\d+$/.test(value) || number < 1 || number > this.todoItems.length) {
+				this.showWarning(`Usage: /todo ${command} <n> (n between 1 and ${this.todoItems.length})`);
+				return undefined;
+			}
+			return number - 1;
+		};
+
+		if (!args) {
+			showList();
+			return;
+		}
+		if (args === "clear") {
+			this.todoItems = [];
+			showMessage(theme.fg("dim", "Todo list cleared"));
+			return;
+		}
+		const match = /^(done|rm)\s*(.*)$/.exec(args);
+		if (match) {
+			const command = match[1];
+			const index = parseIndex(match[2].trim(), command);
+			if (index === undefined) return;
+			if (command === "done") {
+				this.todoItems[index].done = true;
+			} else {
+				this.todoItems.splice(index, 1);
+			}
+			showList();
+			return;
+		}
+		this.todoItems.push({ text: args, done: false });
+		showList();
 	}
 
 	private handleSessionCommand(): void {
