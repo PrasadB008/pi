@@ -455,6 +455,7 @@ export class InteractiveMode {
 	private mainScreenRenderState: TuiMainScreenRenderState | undefined;
 	private loadedResourcesContainer: Container;
 	private chatContainer: Container;
+	private todoItems: Array<{ text: string; done: boolean }> = [];
 	private documentContainer: Container;
 	private transcriptScrollView: TuiLayouts.ScrollView | undefined;
 	private fullscreenLayoutRoot: Component | undefined;
@@ -3259,6 +3260,11 @@ export class InteractiveMode {
 			}
 			if (text === "/session") {
 				this.handleSessionCommand();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6706,6 +6712,46 @@ export class InteractiveMode {
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
 		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		const args = text.replace(/^\/todo\s*/, "").trim();
+		const showMessage = (message: string): void => {
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(new ThemedText(() => message, 1, 0));
+			this.ui.requestRender();
+		};
+
+		if (args === "clear") {
+			this.todoItems = [];
+			showMessage(theme.fg("dim", "Todo list cleared"));
+			return;
+		}
+
+		const doneMatch = /^done\s+(\d+)$/.exec(args);
+		if (doneMatch) {
+			const item = this.todoItems[Number(doneMatch[1]) - 1];
+			if (!item) {
+				this.showWarning(`No todo item ${doneMatch[1]}`);
+				return;
+			}
+			item.done = true;
+			showMessage(theme.fg("dim", `Done: ${item.text}`));
+			return;
+		}
+
+		if (args) {
+			this.todoItems.push({ text: args, done: false });
+			showMessage(theme.fg("dim", `Todo added (${this.todoItems.length}): ${args}`));
+			return;
+		}
+
+		if (this.todoItems.length === 0) {
+			showMessage(theme.fg("dim", "No todo items. Usage: /todo <text> | /todo done <n> | /todo clear"));
+			return;
+		}
+		const lines = this.todoItems.map((item, index) => `${index + 1}. [${item.done ? "x" : " "}] ${item.text}`);
+		showMessage(`${theme.bold("Todo")}\n\n${lines.join("\n")}`);
 	}
 
 	private handleSessionCommand(): void {
