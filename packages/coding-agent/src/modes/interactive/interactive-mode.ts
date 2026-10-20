@@ -116,6 +116,7 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
+import { applyTodoCommand, type TodoItem } from "../../core/todo-list.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
@@ -455,7 +456,7 @@ export class InteractiveMode {
 	private mainScreenRenderState: TuiMainScreenRenderState | undefined;
 	private loadedResourcesContainer: Container;
 	private chatContainer: Container;
-	private todoItems: Array<{ text: string; done: boolean }> = [];
+	private todoItems: TodoItem[] = [];
 	private documentContainer: Container;
 	private transcriptScrollView: TuiLayouts.ScrollView | undefined;
 	private fullscreenLayoutRoot: Component | undefined;
@@ -6715,43 +6716,16 @@ export class InteractiveMode {
 	}
 
 	private handleTodoCommand(text: string): void {
-		const args = text.replace(/^\/todo\s*/, "").trim();
-		const showMessage = (message: string): void => {
-			this.chatContainer.addChild(new Spacer(1));
-			this.chatContainer.addChild(new ThemedText(() => message, 1, 0));
-			this.ui.requestRender();
-		};
-
-		if (args === "clear") {
-			this.todoItems = [];
-			showMessage(theme.fg("dim", "Todo list cleared"));
+		const result = applyTodoCommand(this.todoItems, text.replace(/^\/todo\s*/, ""));
+		this.todoItems = result.items;
+		if (result.kind === "error") {
+			this.showWarning(result.message);
 			return;
 		}
-
-		const doneMatch = /^done\s+(\d+)$/.exec(args);
-		if (doneMatch) {
-			const item = this.todoItems[Number(doneMatch[1]) - 1];
-			if (!item) {
-				this.showWarning(`No todo item ${doneMatch[1]}`);
-				return;
-			}
-			item.done = true;
-			showMessage(theme.fg("dim", `Done: ${item.text}`));
-			return;
-		}
-
-		if (args) {
-			this.todoItems.push({ text: args, done: false });
-			showMessage(theme.fg("dim", `Todo added (${this.todoItems.length}): ${args}`));
-			return;
-		}
-
-		if (this.todoItems.length === 0) {
-			showMessage(theme.fg("dim", "No todo items. Usage: /todo <text> | /todo done <n> | /todo clear"));
-			return;
-		}
-		const lines = this.todoItems.map((item, index) => `${index + 1}. [${item.done ? "x" : " "}] ${item.text}`);
-		showMessage(`${theme.bold("Todo")}\n\n${lines.join("\n")}`);
+		const message = result.kind === "list" ? result.message.replace(/^Todo/, theme.bold("Todo")) : theme.fg("dim", result.message);
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(() => message, 1, 0));
+		this.ui.requestRender();
 	}
 
 	private handleSessionCommand(): void {
