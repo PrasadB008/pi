@@ -117,6 +117,7 @@ import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
+import { applyTodoCommand, type TodoItem } from "../../core/todo-list.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
@@ -455,6 +456,7 @@ export class InteractiveMode {
 	private mainScreenRenderState: TuiMainScreenRenderState | undefined;
 	private loadedResourcesContainer: Container;
 	private chatContainer: Container;
+	private todoItems: TodoItem[] = [];
 	private documentContainer: Container;
 	private transcriptScrollView: TuiLayouts.ScrollView | undefined;
 	private fullscreenLayoutRoot: Component | undefined;
@@ -3254,6 +3256,11 @@ export class InteractiveMode {
 			}
 			if (text === "/name" || text.startsWith("/name ")) {
 				this.handleNameCommand(text);
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text.slice("/todo".length).trim());
 				this.editor.setText("");
 				return;
 			}
@@ -6706,6 +6713,38 @@ export class InteractiveMode {
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
 		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(args: string): void {
+		const showText = (build: () => string): void => {
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(new ThemedText(build, 1, 0));
+			this.ui.requestRender();
+		};
+
+		const result = applyTodoCommand(this.todoItems, args);
+		if (result.error) {
+			this.showWarning(result.error);
+			return;
+		}
+		this.todoItems = result.items;
+		if (result.action === "clear") {
+			showText(() => theme.fg("dim", "Todo list cleared"));
+			return;
+		}
+
+		if (this.todoItems.length === 0) {
+			showText(() => theme.fg("dim", "No todo items. Usage: /todo <text> | done <n> | clear"));
+			return;
+		}
+		const snapshot = this.todoItems.map((item) => ({ ...item }));
+		showText(() => {
+			const lines = snapshot.map((item, i) => {
+				const line = `${i + 1}. [${item.done ? "x" : " "}] ${item.text}`;
+				return item.done ? theme.fg("dim", line) : line;
+			});
+			return `${theme.bold("Todo")}\n${lines.join("\n")}`;
+		});
 	}
 
 	private handleSessionCommand(): void {
