@@ -3257,6 +3257,11 @@ export class InteractiveMode {
 				this.editor.setText("");
 				return;
 			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
+				this.editor.setText("");
+				return;
+			}
 			if (text === "/session") {
 				this.handleSessionCommand();
 				this.editor.setText("");
@@ -6680,6 +6685,71 @@ export class InteractiveMode {
 			}
 		} catch (error) {
 			this.showError(error instanceof Error ? error.message : String(error));
+		}
+	}
+
+	private todoItems: Array<{ text: string; done: boolean }> = [];
+
+	private handleTodoCommand(text: string): void {
+		const usage = "Usage: /todo [add <text> | done <n> | undo <n> | remove <n> | clear]";
+		const args = text.replace(/^\/todo\s*/, "").trim();
+		const match = /^(\S+)\s*(.*)$/s.exec(args);
+		const action = match ? match[1] : "";
+		const rest = match ? match[2].trim() : "";
+
+		const parseIndex = (): number | undefined => {
+			const index = Number.parseInt(rest, 10) - 1;
+			if (!/^\d+$/.test(rest) || index < 0 || index >= this.todoItems.length) {
+				this.showWarning(`Invalid todo number: ${rest || "(none)"}`);
+				return undefined;
+			}
+			return index;
+		};
+
+		if (!action) {
+			if (this.todoItems.length === 0) {
+				this.showStatus("No todos. Add one with /todo add <text>");
+				return;
+			}
+			const lines = this.todoItems.map((item, i) => `${i + 1}. [${item.done ? "x" : " "}] ${item.text}`);
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Todos:\n${lines.join("\n")}`), 1, 0));
+			this.ui.requestRender();
+			return;
+		}
+
+		switch (action) {
+			case "add": {
+				if (!rest) {
+					this.showWarning("Usage: /todo add <text>");
+					return;
+				}
+				this.todoItems.push({ text: rest, done: false });
+				this.showStatus(`Todo added (#${this.todoItems.length}): ${rest}`);
+				return;
+			}
+			case "done":
+			case "undo": {
+				const index = parseIndex();
+				if (index === undefined) return;
+				this.todoItems[index].done = action === "done";
+				this.showStatus(`Todo #${index + 1} ${action === "done" ? "completed" : "reopened"}`);
+				return;
+			}
+			case "remove": {
+				const index = parseIndex();
+				if (index === undefined) return;
+				const [removed] = this.todoItems.splice(index, 1);
+				this.showStatus(`Todo removed: ${removed.text}`);
+				return;
+			}
+			case "clear": {
+				this.todoItems = [];
+				this.showStatus("Todos cleared");
+				return;
+			}
+			default:
+				this.showWarning(usage);
 		}
 	}
 
