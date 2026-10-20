@@ -115,6 +115,7 @@ import {
 } from "../../core/session-manager.ts";
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
+import { applyTodoCommand, type TodoItem } from "../../core/todo.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
@@ -479,7 +480,7 @@ export class InteractiveMode {
 	private onInputCallback?: (text: string) => void;
 	private pendingUserInputs: string[] = [];
 	/** Session-local todo list managed by /todo. Not persisted. */
-	private todoItems: Array<{ text: string; done: boolean }> = [];
+	private todoItems: TodoItem[] = [];
 	private activeStatusIndicator: StatusIndicator | undefined = undefined;
 	private activeWorkingIndicatorEmbedded = false;
 	private readonly idleStatus = new IdleStatus();
@@ -6716,33 +6717,14 @@ export class InteractiveMode {
 	}
 
 	private handleTodoCommand(text: string): void {
-		const args = text.replace(/^\/todo\s*/, "").trim();
-		const [subcommand = "", ...rest] = args.split(/\s+/);
-		const argument = rest.join(" ").trim();
-		const usage = "Usage: /todo [add <text> | done <n> | clear]";
-
-		if (subcommand === "add") {
-			if (!argument) {
-				this.showWarning(usage);
-				return;
-			}
-			this.todoItems.push({ text: argument, done: false });
-		} else if (subcommand === "done") {
-			const index = Number.parseInt(argument, 10) - 1;
-			const item = this.todoItems[index];
-			if (!item) {
-				this.showWarning(`No todo item ${argument || "(missing number)"}. ${usage}`);
-				return;
-			}
-			item.done = true;
-		} else if (subcommand === "clear") {
-			this.todoItems = [];
-		} else if (subcommand !== "") {
-			this.showWarning(usage);
+		const result = applyTodoCommand(this.todoItems, text.replace(/^\/todo/, ""));
+		if (!result.ok) {
+			this.showWarning(result.message);
 			return;
 		}
+		this.todoItems = result.items;
 
-		const items = this.todoItems.map((item) => ({ ...item }));
+		const items = result.items;
 		const renderTodos = (): string => {
 			if (items.length === 0) {
 				return theme.fg("dim", "No todo items. Use /todo add <text>.");
