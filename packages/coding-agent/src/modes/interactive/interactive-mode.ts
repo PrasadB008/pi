@@ -117,6 +117,7 @@ import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
+import { extractTodos } from "../../core/todo-list.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
@@ -3259,6 +3260,11 @@ export class InteractiveMode {
 			}
 			if (text === "/session") {
 				this.handleSessionCommand();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo") {
+				this.handleTodoCommand();
 				this.editor.setText("");
 				return;
 			}
@@ -6705,6 +6711,27 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(): void {
+		const todos = extractTodos(this.sessionManager.getBranch());
+		const renderTodos = (): string => {
+			if (todos.length === 0) {
+				return theme.fg("dim", "No todos on this branch");
+			}
+			const done = todos.filter((t) => t.done).length;
+			let out = `${theme.bold("Todos")} ${theme.fg("dim", `(${done}/${todos.length} completed)`)}\n`;
+			for (const t of todos) {
+				const check = t.done ? theme.fg("success", "✓") : theme.fg("dim", "○");
+				const label = t.done ? theme.fg("dim", t.text) : t.text;
+				out += `\n${check} ${theme.fg("accent", `#${t.id}`)} ${label}`;
+			}
+			return out;
+		};
+
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(renderTodos, 1, 0));
 		this.ui.requestRender();
 	}
 
