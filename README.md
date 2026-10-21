@@ -20,6 +20,8 @@ Pi ships with powerful defaults but skips features like sub-agents and plan mode
 
 Use Pi [interactively](packages/coding-agent/docs/usage.md), automate it in [print or JSON mode](packages/coding-agent/docs/cli.md), control it over [RPC](packages/coding-agent/docs/rpc.md), or build apps with the [Pi TypeScript SDK](packages/coding-agent/docs/sdk.md). See [OpenClaw](https://github.com/OpenClaw/OpenClaw) for a real-world integration.
 
+Verified on main
+
 ## Getting started
 
 Install the command-line interface:
