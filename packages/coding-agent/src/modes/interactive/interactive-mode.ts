@@ -478,6 +478,7 @@ export class InteractiveMode {
 	private isInitialized = false;
 	private onInputCallback?: (text: string) => void;
 	private pendingUserInputs: string[] = [];
+	private todos: Array<{ text: string; done: boolean }> = [];
 	private activeStatusIndicator: StatusIndicator | undefined = undefined;
 	private activeWorkingIndicatorEmbedded = false;
 	private readonly idleStatus = new IdleStatus();
@@ -3254,6 +3255,11 @@ export class InteractiveMode {
 			}
 			if (text === "/name" || text.startsWith("/name ")) {
 				this.handleNameCommand(text);
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text.slice("/todo".length).trim());
 				this.editor.setText("");
 				return;
 			}
@@ -6706,6 +6712,50 @@ export class InteractiveMode {
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
 		this.ui.requestRender();
+	}
+
+	private showTodoList(): void {
+		this.chatContainer.addChild(new Spacer(1));
+		if (this.todos.length === 0) {
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", "No todos"), 1, 0));
+		} else {
+			const lines = this.todos.map((todo, index) => `${index + 1}. [${todo.done ? "x" : " "}] ${todo.text}`);
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", lines.join("\n")), 1, 0));
+		}
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(args: string): void {
+		if (!args) {
+			this.showTodoList();
+			return;
+		}
+
+		const doneMatch = /^done\s+(\d+)$/.exec(args);
+		if (doneMatch) {
+			const todo = this.todos[Number.parseInt(doneMatch[1], 10) - 1];
+			if (!todo) {
+				this.showWarning(`No todo number ${doneMatch[1]}`);
+				return;
+			}
+			todo.done = true;
+			this.showTodoList();
+			return;
+		}
+
+		if (args === "clear") {
+			this.todos = [];
+			this.showTodoList();
+			return;
+		}
+
+		const text = args.replace(/^add\s+/, "").trim();
+		if (!text || text === "add" || text === "done") {
+			this.showWarning("Usage: /todo [add <text> | done <n> | clear]");
+			return;
+		}
+		this.todos.push({ text, done: false });
+		this.showTodoList();
 	}
 
 	private handleSessionCommand(): void {
