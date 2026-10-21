@@ -115,6 +115,7 @@ import {
 } from "../../core/session-manager.ts";
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
+import { applyTodoCommand, formatTodoList, type TodoItem } from "../../core/todo-list.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
@@ -478,7 +479,7 @@ export class InteractiveMode {
 	private isInitialized = false;
 	private onInputCallback?: (text: string) => void;
 	private pendingUserInputs: string[] = [];
-	private todos: Array<{ text: string; done: boolean }> = [];
+	private todos: TodoItem[] = [];
 	private activeStatusIndicator: StatusIndicator | undefined = undefined;
 	private activeWorkingIndicatorEmbedded = false;
 	private readonly idleStatus = new IdleStatus();
@@ -6715,46 +6716,18 @@ export class InteractiveMode {
 	}
 
 	private showTodoList(): void {
+		const text = formatTodoList(this.todos);
 		this.chatContainer.addChild(new Spacer(1));
-		if (this.todos.length === 0) {
-			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", "No todos"), 1, 0));
-		} else {
-			const lines = this.todos.map((todo, index) => `${index + 1}. [${todo.done ? "x" : " "}] ${todo.text}`);
-			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", lines.join("\n")), 1, 0));
-		}
+		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", text), 1, 0));
 		this.ui.requestRender();
 	}
 
 	private handleTodoCommand(args: string): void {
-		if (!args) {
-			this.showTodoList();
+		const result = applyTodoCommand(this.todos, args);
+		if (!result.ok) {
+			this.showWarning(result.error);
 			return;
 		}
-
-		const doneMatch = /^done\s+(\d+)$/.exec(args);
-		if (doneMatch) {
-			const todo = this.todos[Number.parseInt(doneMatch[1], 10) - 1];
-			if (!todo) {
-				this.showWarning(`No todo number ${doneMatch[1]}`);
-				return;
-			}
-			todo.done = true;
-			this.showTodoList();
-			return;
-		}
-
-		if (args === "clear") {
-			this.todos = [];
-			this.showTodoList();
-			return;
-		}
-
-		const text = args.replace(/^add\s+/, "").trim();
-		if (!text || text === "add" || text === "done") {
-			this.showWarning("Usage: /todo [add <text> | done <n> | clear]");
-			return;
-		}
-		this.todos.push({ text, done: false });
 		this.showTodoList();
 	}
 
