@@ -117,6 +117,7 @@ import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
+import { applyTodoCommand, formatTodoLines, TODO_CUSTOM_TYPE, type TodoItem } from "../../core/todo.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
@@ -3254,6 +3255,11 @@ export class InteractiveMode {
 			}
 			if (text === "/name" || text.startsWith("/name ")) {
 				this.handleNameCommand(text);
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text.slice("/todo".length).trim());
 				this.editor.setText("");
 				return;
 			}
@@ -6705,6 +6711,35 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private getTodos(): TodoItem[] {
+		const branch = this.sessionManager.getBranch();
+		for (let i = branch.length - 1; i >= 0; i--) {
+			const entry = branch[i];
+			if (entry.type === "custom" && entry.customType === TODO_CUSTOM_TYPE && Array.isArray(entry.data)) {
+				return entry.data as TodoItem[];
+			}
+		}
+		return [];
+	}
+
+	private handleTodoCommand(args: string): void {
+		const result = applyTodoCommand(this.getTodos(), args);
+		if (result.error) {
+			this.showWarning(result.error);
+			return;
+		}
+		if (result.changed) {
+			this.sessionManager.appendCustomEntry(TODO_CUSTOM_TYPE, result.todos);
+		}
+		const message =
+			result.todos.length === 0
+				? theme.fg("dim", result.changed ? "Todos cleared" : "No todos. Add one with /todo <text>")
+				: `${theme.bold("Todos")}\n\n${formatTodoLines(result.todos).join("\n")}`;
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(() => message, 1, 0));
 		this.ui.requestRender();
 	}
 
