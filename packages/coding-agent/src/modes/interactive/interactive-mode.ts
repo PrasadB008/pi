@@ -117,6 +117,7 @@ import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
+import { applyTodoCommand, type TodoItem } from "../../core/todo-list.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
@@ -6714,44 +6715,15 @@ export class InteractiveMode {
 	}
 
 	/** In-memory todo list for this interactive session (not persisted). */
-	private todoItems: { text: string; done: boolean }[] = [];
+	private todoItems: TodoItem[] = [];
 
 	private handleTodoCommand(text: string): void {
-		const args = text.replace(/^\/todo\s*/, "").trim();
-		const usage = "Usage: /todo [add <text> | done <n> | remove <n> | clear]";
-		const match = args.match(/^(\S+)\s*(.*)$/);
-		const action = match ? match[1] : "";
-		const rest = match ? match[2].trim() : "";
-
-		const parseIndex = (): number | undefined => {
-			const n = Number(rest);
-			if (!Number.isInteger(n) || n < 1 || n > this.todoItems.length) {
-				this.showWarning(`Invalid todo number: ${rest || "(none)"}. ${usage}`);
-				return undefined;
-			}
-			return n - 1;
-		};
-
-		if (action === "add") {
-			if (!rest) {
-				this.showWarning(usage);
-				return;
-			}
-			this.todoItems.push({ text: rest, done: false });
-		} else if (action === "done") {
-			const index = parseIndex();
-			if (index === undefined) return;
-			this.todoItems[index].done = true;
-		} else if (action === "remove") {
-			const index = parseIndex();
-			if (index === undefined) return;
-			this.todoItems.splice(index, 1);
-		} else if (action === "clear") {
-			this.todoItems = [];
-		} else if (action) {
-			this.showWarning(usage);
+		const result = applyTodoCommand(this.todoItems, text.replace(/^\/todo\s*/, ""));
+		if (result.error) {
+			this.showWarning(result.error);
 			return;
 		}
+		this.todoItems = result.items;
 
 		const items = this.todoItems.map((item) => ({ ...item }));
 		const renderTodos = (): string => {
