@@ -117,6 +117,7 @@ import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
+import { applyTodoCommand, formatTodoLines, TODO_CUSTOM_TYPE, type TodoItem } from "../../core/todo.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
@@ -371,13 +372,6 @@ type LoginProviderCompletionOption = {
 const RADIUS_LOGIN_INTRO = "Radius is a service crafted for Pi by the builders of Pi, Earendil Works";
 
 const AUTH_TYPE_ORDER = { oauth: 0, api_key: 1 } satisfies Record<AuthSelectorProvider["authType"], number>;
-
-const TODO_CUSTOM_TYPE = "todo";
-
-interface TodoItem {
-	text: string;
-	done: boolean;
-}
 
 function createFuzzyAutocompleteItems<T>(
 	items: T[],
@@ -6732,52 +6726,21 @@ export class InteractiveMode {
 	}
 
 	private handleTodoCommand(args: string): void {
-		const todos = this.getTodos();
-		const save = (next: TodoItem[]): void => {
-			this.sessionManager.appendCustomEntry(TODO_CUSTOM_TYPE, next);
-		};
-		const show = (message: string): void => {
-			this.chatContainer.addChild(new Spacer(1));
-			this.chatContainer.addChild(new ThemedText(() => message, 1, 0));
-			this.ui.requestRender();
-		};
-		const render = (items: TodoItem[]): string => {
-			if (items.length === 0) return theme.fg("dim", "No todos. Add one with /todo <text>");
-			const lines = items.map((item, index) => {
-				const line = `${index + 1}. [${item.done ? "x" : " "}] ${item.text}`;
-				return item.done ? theme.fg("dim", line) : line;
-			});
-			return `${theme.bold("Todos")}\n\n${lines.join("\n")}`;
-		};
-
-		if (!args) {
-			show(render(todos));
+		const result = applyTodoCommand(this.getTodos(), args);
+		if (result.error) {
+			this.showWarning(result.error);
 			return;
 		}
-		if (args === "clear") {
-			save([]);
-			show(theme.fg("dim", "Todos cleared"));
-			return;
+		if (result.changed) {
+			this.sessionManager.appendCustomEntry(TODO_CUSTOM_TYPE, result.todos);
 		}
-		const doneMatch = /^done\s+(\d+)$/.exec(args);
-		if (doneMatch) {
-			const index = Number.parseInt(doneMatch[1], 10) - 1;
-			if (index < 0 || index >= todos.length) {
-				this.showWarning(`No todo number ${doneMatch[1]}`);
-				return;
-			}
-			const next = todos.map((item, i) => (i === index ? { ...item, done: true } : item));
-			save(next);
-			show(render(next));
-			return;
-		}
-		if (args === "done" || args.startsWith("done ")) {
-			this.showWarning("Usage: /todo done <n>");
-			return;
-		}
-		const next = [...todos, { text: args, done: false }];
-		save(next);
-		show(render(next));
+		const message =
+			result.todos.length === 0
+				? theme.fg("dim", result.changed ? "Todos cleared" : "No todos. Add one with /todo <text>")
+				: `${theme.bold("Todos")}\n\n${formatTodoLines(result.todos).join("\n")}`;
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(() => message, 1, 0));
+		this.ui.requestRender();
 	}
 
 	private handleSessionCommand(): void {
