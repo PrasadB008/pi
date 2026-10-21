@@ -35,6 +35,7 @@ Extensions, prompt templates, and skills can add commands. The command menu in P
 | Command | Description |
 |---|---|
 | `/copy` | Copy the last assistant message |
+| `/todo [text \| done <id> \| clear]` | Show the session todo list, add an item, toggle an item, or clear the list |
 | `/export [path]` | Export the session as HTML or JSONL |
 | `/share` | Upload the session and return a viewer link |
 | `/bug [description]` | Prepare a private bug report for the Pi developers |
