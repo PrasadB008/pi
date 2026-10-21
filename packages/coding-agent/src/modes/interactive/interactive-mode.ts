@@ -178,6 +178,14 @@ import { ThemedText } from "./components/themed-text.ts";
 import { ThinkingSelectorComponent } from "./components/thinking-selector.ts";
 import { ToolExecutionComponent } from "./components/tool-execution.ts";
 import { TreeSelectorComponent } from "./components/tree-selector.ts";
+import {
+	applyTodoAction,
+	formatTodoList,
+	parseTodoCommand,
+	readTodoItems,
+	TODO_CUSTOM_ENTRY_TYPE,
+	type TodoItem,
+} from "./todo.ts";
 import { TrustSelectorComponent } from "./components/trust-selector.ts";
 import { UserMessageComponent } from "./components/user-message.ts";
 import { UserMessageSelectorComponent } from "./components/user-message-selector.ts";
@@ -3259,6 +3267,11 @@ export class InteractiveMode {
 			}
 			if (text === "/session") {
 				this.handleSessionCommand();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6705,6 +6718,36 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		const action = parseTodoCommand(text);
+		if (action.type === "error") {
+			this.showWarning(action.message);
+			return;
+		}
+
+		let items: TodoItem[] = [];
+		for (const entry of this.sessionManager.getBranch()) {
+			if (entry.type === "custom" && entry.customType === TODO_CUSTOM_ENTRY_TYPE) {
+				items = readTodoItems(entry.data);
+			}
+		}
+
+		if (action.type !== "list") {
+			const result = applyTodoAction(items, action);
+			if ("error" in result) {
+				this.showWarning(result.error);
+				return;
+			}
+			items = result.items;
+			this.sessionManager.appendCustomEntry(TODO_CUSTOM_ENTRY_TYPE, { items });
+		}
+
+		const listing = formatTodoList(items);
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", listing), 1, 0));
 		this.ui.requestRender();
 	}
 
