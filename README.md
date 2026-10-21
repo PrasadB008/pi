@@ -199,6 +199,8 @@ I regularly publish my own `pi-mono` work sessions here:
 
 MIT
 
+Tested with Forge
+
 <p align="center">
   <a href="https://pi.dev">pi.dev</a> domain graciously donated by
   <br /><br />
