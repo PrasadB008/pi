@@ -117,6 +117,7 @@ import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
+import { applyTodoCommand, type TodoItem } from "../../core/todo-list.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
@@ -3249,6 +3250,11 @@ export class InteractiveMode {
 			}
 			if (text === "/copy") {
 				await this.handleCopyCommand();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6681,6 +6687,32 @@ export class InteractiveMode {
 		} catch (error) {
 			this.showError(error instanceof Error ? error.message : String(error));
 		}
+	}
+
+	private todos: TodoItem[] = [];
+
+	private handleTodoCommand(text: string): void {
+		const result = applyTodoCommand(this.todos, text.replace(/^\/todo\s*/, ""));
+		if (result.error) {
+			this.showWarning(result.error);
+			return;
+		}
+		this.todos = result.todos;
+
+		const todos = this.todos;
+		const renderTodos = (): string => {
+			if (todos.length === 0) {
+				return theme.fg("dim", "No todos. Use /todo add <text>");
+			}
+			const lines = todos.map((todo, i) => {
+				const label = `${i + 1}. [${todo.done ? "x" : " "}] ${todo.text}`;
+				return todo.done ? theme.fg("dim", label) : label;
+			});
+			return `${theme.bold("Todo")}\n\n${lines.join("\n")}`;
+		};
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(renderTodos, 1, 0));
+		this.ui.requestRender();
 	}
 
 	private handleNameCommand(text: string): void {
