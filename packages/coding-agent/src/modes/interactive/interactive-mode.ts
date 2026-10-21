@@ -3257,6 +3257,11 @@ export class InteractiveMode {
 				this.editor.setText("");
 				return;
 			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
+				this.editor.setText("");
+				return;
+			}
 			if (text === "/session") {
 				this.handleSessionCommand();
 				this.editor.setText("");
@@ -6705,6 +6710,62 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	/** In-memory todo list for this interactive session (not persisted). */
+	private todoItems: { text: string; done: boolean }[] = [];
+
+	private handleTodoCommand(text: string): void {
+		const args = text.replace(/^\/todo\s*/, "").trim();
+		const usage = "Usage: /todo [add <text> | done <n> | remove <n> | clear]";
+		const match = args.match(/^(\S+)\s*(.*)$/);
+		const action = match ? match[1] : "";
+		const rest = match ? match[2].trim() : "";
+
+		const parseIndex = (): number | undefined => {
+			const n = Number(rest);
+			if (!Number.isInteger(n) || n < 1 || n > this.todoItems.length) {
+				this.showWarning(`Invalid todo number: ${rest || "(none)"}. ${usage}`);
+				return undefined;
+			}
+			return n - 1;
+		};
+
+		if (action === "add") {
+			if (!rest) {
+				this.showWarning(usage);
+				return;
+			}
+			this.todoItems.push({ text: rest, done: false });
+		} else if (action === "done") {
+			const index = parseIndex();
+			if (index === undefined) return;
+			this.todoItems[index].done = true;
+		} else if (action === "remove") {
+			const index = parseIndex();
+			if (index === undefined) return;
+			this.todoItems.splice(index, 1);
+		} else if (action === "clear") {
+			this.todoItems = [];
+		} else if (action) {
+			this.showWarning(usage);
+			return;
+		}
+
+		const items = this.todoItems.map((item) => ({ ...item }));
+		const renderTodos = (): string => {
+			if (items.length === 0) {
+				return theme.fg("dim", "No todos. Use /todo add <text>");
+			}
+			const lines = items.map((item, i) => {
+				const line = `${i + 1}. [${item.done ? "x" : " "}] ${item.text}`;
+				return item.done ? theme.fg("dim", line) : line;
+			});
+			return `${theme.bold("Todo")}\n\n${lines.join("\n")}`;
+		};
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(renderTodos, 1, 0));
 		this.ui.requestRender();
 	}
 
