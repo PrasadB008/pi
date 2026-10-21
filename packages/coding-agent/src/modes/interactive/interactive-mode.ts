@@ -513,6 +513,7 @@ export class InteractiveMode {
 
 	// Thinking block visibility state
 	private hideThinkingBlock = false;
+	private todoItems: string[] = [];
 	private outputPad = 1;
 	private readonly mermaidMarkdownTransformer: MarkdownTransformer = createMermaidMarkdownTransformer({
 		getMode: () => this.settingsManager.getMermaidRenderingMode(),
@@ -3224,6 +3225,11 @@ export class InteractiveMode {
 				const searchTerm = text.startsWith("/thinking ") ? text.slice(10).trim() : undefined;
 				this.editor.setText("");
 				this.handleThinkingCommand(searchTerm);
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.editor.setText("");
+				this.handleTodoCommand(text);
 				return;
 			}
 			if (text === "/export" || text.startsWith("/export ")) {
@@ -6705,6 +6711,22 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		const item = text.replace(/^\/todo\s*/, "").trim();
+		if (item) {
+			this.todoItems.push(item);
+		}
+		this.chatContainer.addChild(new Spacer(1));
+		if (this.todoItems.length === 0) {
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", "No todos. Add one with /todo <item>"), 1, 0));
+		} else {
+			const lines = this.todoItems.map((todo, index) => `${index + 1}. ${todo}`);
+			const header = item ? `Todo added (${this.todoItems.length} total):` : "Todos:";
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", [header, ...lines].join("\n")), 1, 0));
+		}
 		this.ui.requestRender();
 	}
 
