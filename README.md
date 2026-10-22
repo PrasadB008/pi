@@ -53,6 +53,8 @@ For a built-in AI provider, run `/login` inside Pi to connect a subscription or 
 
 See the [documentation](https://pi.dev/docs/latest) for full setup and usage instructions, or [visit pi.dev](https://pi.dev) for demos.
 
+Filtered proxy check
+
 ## Run with Nix
 
 ```bash
