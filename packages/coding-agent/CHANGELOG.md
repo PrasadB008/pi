@@ -4,6 +4,7 @@
 
 ### Added
 
+- Added a `/todo` slash command to manage a per-session todo list (`/todo`, `/todo add <text>`, `/todo done <id>`, `/todo undo <id>`, `/todo remove <id>`, `/todo clear`). The list is stored in the session and follows branching.
 - Added a Models Configuration reference generated from the `models.json` schema, listing all provider, model, model override, and compatibility fields ([#10790](https://github.com/earendil-works/pi/issues/10790))
 
 ### Changed
