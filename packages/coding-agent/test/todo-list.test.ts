@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { BUILTIN_SLASH_COMMANDS } from "../src/core/slash-commands.ts";
 import type { SessionEntry } from "../src/core/session-manager.ts";
+import { BUILTIN_SLASH_COMMANDS } from "../src/core/slash-commands.ts";
 import { getTodosFromBranch } from "../src/core/todo-list.ts";
 
 function toolResult(toolName: string, details: unknown): SessionEntry {
