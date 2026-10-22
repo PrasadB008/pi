@@ -116,6 +116,7 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
+import { TodoList } from "../../core/todo-list.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
@@ -481,6 +482,7 @@ export class InteractiveMode {
 	private activeStatusIndicator: StatusIndicator | undefined = undefined;
 	private activeWorkingIndicatorEmbedded = false;
 	private readonly idleStatus = new IdleStatus();
+	private readonly todoList = new TodoList();
 	private workingMessage: string | undefined = undefined;
 	private workingVisible = true;
 	private workingIndicatorOptions: WorkingIndicatorOptions | undefined = undefined;
@@ -3254,6 +3256,11 @@ export class InteractiveMode {
 			}
 			if (text === "/name" || text.startsWith("/name ")) {
 				this.handleNameCommand(text);
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text.slice("/todo".length));
 				this.editor.setText("");
 				return;
 			}
@@ -6705,6 +6712,18 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(args: string): void {
+		const result = this.todoList.run(args);
+		if (result.isError) {
+			this.showWarning(result.lines.join("\n"));
+			return;
+		}
+		this.chatContainer.addChild(new Spacer(1));
+		const output = result.lines.join("\n");
+		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", output), 1, 0));
 		this.ui.requestRender();
 	}
 

@@ -60,6 +60,7 @@ Pi saves sessions automatically unless session persistence is disabled.
 - `/resume` opens another saved session.
 - `/name` gives the current session a recognizable name.
 - `/session` shows its file, ID, message count, token usage, and cost.
+- `/todo` manages an in-memory todo list for the running process: `/todo` lists items, `/todo <text>` adds one, and `/todo done|undone|remove <n>` and `/todo clear` update it.
 
 Use `/tree`, `/fork`, or `/clone` when you want to explore another approach without losing existing work. Use `/compact` to reduce the conversation history sent to the model. See [Sessions and Context](sessions.md) for these workflows.
 
