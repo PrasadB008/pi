@@ -4,6 +4,8 @@
  * This extension:
  * - Registers a `todo` tool for the LLM to manage todos
  * - Registers a `/todos` command for users to view the list
+ * - Registers a `/todo` command: `/todo` shows the list, `/todo <text>` adds,
+ *   `/todo done <id>` completes, `/todo clear` clears (via the todo tool)
  *
  * State is stored in tool result details (not external files), which allows
  * proper branching - when you branch, the todo state is automatically
@@ -11,7 +13,7 @@
  */
 
 import { StringEnum } from "@earendil-works/pi-ai";
-import type { ExtensionAPI, ExtensionContext, Theme } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionCommandContext, ExtensionContext, Theme } from "@earendil-works/pi-coding-agent";
 import { matchesKey, Text, truncateToWidth } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
 
@@ -280,17 +282,59 @@ export default function (pi: ExtensionAPI) {
 		},
 	});
 
+	const showTodos = async (commandName: string, ctx: ExtensionCommandContext) => {
+		if (ctx.mode !== "tui") {
+			ctx.ui.notify(`/${commandName} requires interactive mode`, "error");
+			return;
+		}
+
+		await ctx.ui.custom<void>((_tui, theme, _kb, done) => {
+			return new TodoListComponent(todos, theme, () => done());
+		});
+	};
+
 	// Register the /todos command for users
 	pi.registerCommand("todos", {
 		description: "Show all todos on the current branch",
-		handler: async (_args, ctx) => {
-			if (ctx.mode !== "tui") {
-				ctx.ui.notify("/todos requires interactive mode", "error");
+		handler: async (_args, ctx) => showTodos("todos", ctx),
+	});
+
+	// Register the /todo command: show the list, or ask the agent to change it.
+	// Changes go through the todo tool so state stays in the session history.
+	pi.registerCommand("todo", {
+		description: "Show todos, or manage them: /todo <text>, /todo done <id>, /todo clear",
+		handler: async (args, ctx) => {
+			const input = args.trim();
+			if (!input) {
+				await showTodos("todo", ctx);
 				return;
 			}
 
-			await ctx.ui.custom<void>((_tui, theme, _kb, done) => {
-				return new TodoListComponent(todos, theme, () => done());
+			if (input === "clear") {
+				pi.sendUserMessage("Use the todo tool to clear all todos.", { deliverAs: "followUp" });
+				return;
+			}
+
+			const doneMatch = /^done\s+#?(\d+)$/.exec(input);
+			if (doneMatch) {
+				const id = Number(doneMatch[1]);
+				const todo = todos.find((t) => t.id === id);
+				if (!todo) {
+					ctx.ui.notify(`Todo #${id} not found`, "error");
+					return;
+				}
+				if (todo.done) {
+					ctx.ui.notify(`Todo #${id} is already completed`, "info");
+					return;
+				}
+				pi.sendUserMessage(`Use the todo tool to toggle todo #${id} (mark it completed).`, {
+					deliverAs: "followUp",
+				});
+				return;
+			}
+
+			pi.sendUserMessage(`Use the todo tool to add this todo: ${JSON.stringify(input)}`, {
+				deliverAs: "followUp",
 			});
 		},
 	});
