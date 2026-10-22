@@ -115,6 +115,7 @@ import {
 } from "../../core/session-manager.ts";
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
+import { getTodosFromBranch } from "../../core/todo-list.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
@@ -6714,17 +6715,7 @@ export class InteractiveMode {
 	}
 
 	private handleTodoCommand(): void {
-		// The `todo` tool (see examples/extensions/todo.ts) stores its full list in each result's details.
-		let todos: Array<{ id: number; text: string; done: boolean }> = [];
-		for (const entry of this.sessionManager.getBranch()) {
-			if (entry.type !== "message") continue;
-			const msg = entry.message;
-			if (msg.role !== "toolResult" || msg.toolName !== "todo") continue;
-			const details = msg.details as { todos?: typeof todos } | undefined;
-			if (details && Array.isArray(details.todos)) {
-				todos = details.todos;
-			}
-		}
+		const todos = getTodosFromBranch(this.sessionManager.getBranch());
 
 		this.chatContainer.addChild(new Spacer(1));
 		if (todos.length === 0) {
