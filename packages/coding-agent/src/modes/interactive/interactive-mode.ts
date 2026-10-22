@@ -3262,6 +3262,11 @@ export class InteractiveMode {
 				this.editor.setText("");
 				return;
 			}
+			if (text === "/todo") {
+				this.handleTodoCommand();
+				this.editor.setText("");
+				return;
+			}
 			if (text === "/changelog") {
 				this.handleChangelogCommand();
 				this.editor.setText("");
@@ -6705,6 +6710,35 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(): void {
+		// The `todo` tool (see examples/extensions/todo.ts) stores its full list in each result's details.
+		let todos: Array<{ id: number; text: string; done: boolean }> = [];
+		for (const entry of this.sessionManager.getBranch()) {
+			if (entry.type !== "message") continue;
+			const msg = entry.message;
+			if (msg.role !== "toolResult" || msg.toolName !== "todo") continue;
+			const details = msg.details as { todos?: typeof todos } | undefined;
+			if (details && Array.isArray(details.todos)) {
+				todos = details.todos;
+			}
+		}
+
+		this.chatContainer.addChild(new Spacer(1));
+		if (todos.length === 0) {
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", "No todos"), 1, 0));
+		} else {
+			const done = todos.filter((todo) => todo.done).length;
+			const renderTodos = (): string => {
+				const lines = todos.map(
+					(todo) => `${todo.done ? theme.fg("success", "[x]") : theme.fg("dim", "[ ]")} #${todo.id} ${todo.text}`,
+				);
+				return `${theme.bold(`Todos (${done}/${todos.length} done)`)}\n\n${lines.join("\n")}`;
+			};
+			this.chatContainer.addChild(new ThemedText(renderTodos, 1, 0));
+		}
 		this.ui.requestRender();
 	}
 
