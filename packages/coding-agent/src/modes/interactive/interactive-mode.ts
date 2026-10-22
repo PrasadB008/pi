@@ -117,6 +117,7 @@ import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
+import { TodoList } from "../../core/todo-list.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
@@ -6713,24 +6714,12 @@ export class InteractiveMode {
 		this.ui.requestRender();
 	}
 
-	private todoItems: string[] = [];
+	private todoList = new TodoList();
 
 	private handleTodoCommand(text: string): void {
-		const item = text.replace(/^\/todo\s*/, "").trim();
-		if (item) {
-			this.todoItems.push(item);
-		}
+		const result = this.todoList.handle(text);
 		this.chatContainer.addChild(new Spacer(1));
-		if (item) {
-			this.chatContainer.addChild(
-				new ThemedText(() => theme.fg("dim", `Todo added (${this.todoItems.length}): ${item}`), 1, 0),
-			);
-		} else if (this.todoItems.length === 0) {
-			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", "No todo items. Use /todo <text> to add one."), 1, 0));
-		} else {
-			const lines = this.todoItems.map((todo, index) => `${index + 1}. ${todo}`).join("\n");
-			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Todo:\n${lines}`), 1, 0));
-		}
+		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", result.message), 1, 0));
 		this.ui.requestRender();
 	}
 
