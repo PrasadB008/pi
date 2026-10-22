@@ -4,6 +4,7 @@
 
 ### Added
 
+- Added a `/todo` slash command that keeps an in-memory todo list for the current interactive session (`/todo add <text>`, `done <n>`, `rm <n>`, `clear`)
 - Added a Models Configuration reference generated from the `models.json` schema, listing all provider, model, model override, and compatibility fields ([#10790](https://github.com/earendil-works/pi/issues/10790))
 
 ### Changed
