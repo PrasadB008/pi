@@ -56,6 +56,16 @@ export function getTodoState(branch: ReadonlyArray<SessionEntry>): TodoState {
 	return emptyTodoState();
 }
 
+export const TODO_UNSAVED_NOTE = "(Not saved yet: todos are written to the session file after the first message.)";
+
+/**
+ * Session files are created only once the branch holds a user or assistant message, so todo
+ * entries added before that exist in memory only.
+ */
+export function isTodoUnsaved(branch: ReadonlyArray<SessionEntry>): boolean {
+	return !branch.some((e) => e.type === "message" && (e.message.role === "user" || e.message.role === "assistant"));
+}
+
 export function parseTodoCommand(text: string): TodoCommand {
 	const args = text.replace(/^\/todo\s*/, "").trim();
 	if (!args) return { action: "list" };

@@ -117,7 +117,15 @@ import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
-import { applyTodoCommand, getTodoState, parseTodoCommand, TODO_ENTRY_TYPE, TODO_USAGE } from "../../core/todos.ts";
+import {
+	applyTodoCommand,
+	getTodoState,
+	isTodoUnsaved,
+	parseTodoCommand,
+	TODO_ENTRY_TYPE,
+	TODO_UNSAVED_NOTE,
+	TODO_USAGE,
+} from "../../core/todos.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
@@ -6805,10 +6813,14 @@ export class InteractiveMode {
 		if (result.changed) {
 			this.sessionManager.appendCustomEntry(TODO_ENTRY_TYPE, result.state);
 		}
-		const message = command.action === "list" || result.changed ? result.message : undefined;
+		let message = command.action === "list" || result.changed ? result.message : undefined;
 		if (message === undefined) {
 			this.showWarning(result.message);
 			return;
+		}
+		// The session file is created only once there is a user or assistant message.
+		if (result.changed && this.sessionManager.isPersisted() && isTodoUnsaved(this.sessionManager.getBranch())) {
+			message += `\n${TODO_UNSAVED_NOTE}`;
 		}
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", message), 1, 0));

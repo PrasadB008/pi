@@ -5,9 +5,30 @@ import {
 	emptyTodoState,
 	formatTodoList,
 	getTodoState,
+	isTodoUnsaved,
 	parseTodoCommand,
 	TODO_ENTRY_TYPE,
 } from "../src/core/todos.ts";
+
+function messageEntry(id: string, role: "user" | "assistant" | "toolResult"): SessionEntry {
+	return {
+		type: "message",
+		id,
+		parentId: null,
+		timestamp: "2024-01-01T00:00:00.000Z",
+		message: { role, content: [], timestamp: 0 },
+	} as unknown as SessionEntry;
+}
+
+describe("isTodoUnsaved", () => {
+	it("is true until the branch has a user or assistant message", () => {
+		expect(isTodoUnsaved([])).toBe(true);
+		expect(isTodoUnsaved([customEntry("a", emptyTodoState())])).toBe(true);
+		expect(isTodoUnsaved([customEntry("a", emptyTodoState()), messageEntry("b", "toolResult")])).toBe(true);
+		expect(isTodoUnsaved([customEntry("a", emptyTodoState()), messageEntry("b", "user")])).toBe(false);
+		expect(isTodoUnsaved([messageEntry("b", "assistant")])).toBe(false);
+	});
+});
 
 function customEntry(id: string, data: unknown, customType = TODO_ENTRY_TYPE): SessionEntry {
 	return { type: "custom", customType, data, id, parentId: null, timestamp: "2024-01-01T00:00:00.000Z" };

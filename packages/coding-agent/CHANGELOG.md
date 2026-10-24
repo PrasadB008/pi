@@ -4,7 +4,7 @@
 
 ### Added
 
-- Added a built-in `/todo` command to list and edit a per-session todo list (`add`, `done`, `undo`, `remove`, `clear`). Todos are stored in the session file and are not sent to the model.
+- Added a built-in `/todo` command to list and edit a per-session todo list (`add`, `done`, `undo`, `remove`, `clear`). Todos are stored in the session file (written once the session has its first message) and are not sent to the model.
 - Added a Models Configuration reference generated from the `models.json` schema, listing all provider, model, model override, and compatibility fields ([#10790](https://github.com/earendil-works/pi/issues/10790))
 
 ### Changed
