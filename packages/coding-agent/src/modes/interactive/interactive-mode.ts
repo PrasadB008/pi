@@ -116,6 +116,13 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
+import {
+	applyTodosCommand,
+	formatTodos,
+	getTodosState,
+	parseTodosCommand,
+	TODOS_ENTRY_TYPE,
+} from "../../core/todos.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
@@ -3254,6 +3261,11 @@ export class InteractiveMode {
 			}
 			if (text === "/name" || text.startsWith("/name ")) {
 				this.handleNameCommand(text);
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todos" || text.startsWith("/todos ")) {
+				this.handleTodosCommand(text.slice("/todos".length));
 				this.editor.setText("");
 				return;
 			}
@@ -6705,6 +6717,25 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodosCommand(args: string): void {
+		const command = parseTodosCommand(args);
+		const state = getTodosState(this.sessionManager.getBranch());
+		const result = applyTodosCommand(state, command);
+
+		if (command.action === "invalid") {
+			this.showWarning(result.message);
+			return;
+		}
+		if (result.changed) {
+			this.sessionManager.appendCustomEntry(TODOS_ENTRY_TYPE, result.state);
+		}
+		const body =
+			command.action === "list" ? formatTodos(result.state) : `${result.message}\n\n${formatTodos(result.state)}`;
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", body), 1, 0));
 		this.ui.requestRender();
 	}
 
