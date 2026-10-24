@@ -116,6 +116,7 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
+import { applyTodoCommand, getTodoState, parseTodoCommand, TODO_ENTRY_TYPE, TODO_USAGE } from "../../core/todos.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
@@ -3259,6 +3260,11 @@ export class InteractiveMode {
 			}
 			if (text === "/session") {
 				this.handleSessionCommand();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6786,6 +6792,26 @@ export class InteractiveMode {
 
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new ThemedText(renderInfo, 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		const command = parseTodoCommand(text);
+		if (command.action === "usage") {
+			this.showWarning(`${command.message}\n${TODO_USAGE}`);
+			return;
+		}
+		const result = applyTodoCommand(getTodoState(this.sessionManager.getBranch()), command);
+		if (result.changed) {
+			this.sessionManager.appendCustomEntry(TODO_ENTRY_TYPE, result.state);
+		}
+		const message = command.action === "list" || result.changed ? result.message : undefined;
+		if (message === undefined) {
+			this.showWarning(result.message);
+			return;
+		}
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", message), 1, 0));
 		this.ui.requestRender();
 	}
 
