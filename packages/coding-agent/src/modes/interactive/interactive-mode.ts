@@ -117,6 +117,7 @@ import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
+import { scanTodos, type TodoScanResult } from "../../core/todo-scanner.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
@@ -3265,6 +3266,11 @@ export class InteractiveMode {
 			if (text === "/changelog") {
 				this.handleChangelogCommand();
 				this.editor.setText("");
+				return;
+			}
+			if (text === "/todos") {
+				this.editor.setText("");
+				await this.handleTodosCommand();
 				return;
 			}
 			if (text === "/hotkeys") {
@@ -6806,6 +6812,43 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new ThemedText(() => theme.bold(theme.fg("accent", "What's New")), 1, 0));
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new Markdown(changelogMarkdown, 1, 1, this.getMarkdownThemeWithSettings()));
+		this.chatContainer.addChild(new DynamicBorder());
+		this.ui.requestRender();
+	}
+
+	private async handleTodosCommand(): Promise<void> {
+		let result: TodoScanResult;
+		try {
+			result = await scanTodos(this.sessionManager.getCwd());
+		} catch (error) {
+			this.showError(`Failed to scan for TODOs: ${error instanceof Error ? error.message : String(error)}`);
+			return;
+		}
+
+		const { items, filesScanned } = result;
+		const lines: string[] = [];
+		if (items.length === 0) {
+			lines.push(`No TODO or FIXME comments found (${filesScanned} files scanned).`);
+		} else {
+			let currentFile = "";
+			for (const item of items) {
+				if (item.file !== currentFile) {
+					currentFile = item.file;
+					if (lines.length > 0) lines.push("");
+					lines.push(`**${item.file}**`);
+					lines.push("");
+				}
+				lines.push(`- \`${item.line}\` ${item.tag}${item.text ? `: ${item.text}` : ""}`);
+			}
+			lines.push("");
+			lines.push(`${items.length} outstanding (${filesScanned} files scanned)`);
+		}
+
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new DynamicBorder());
+		this.chatContainer.addChild(new ThemedText(() => theme.bold(theme.fg("accent", "TODOs")), 1, 0));
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new Markdown(lines.join("\n"), 1, 1, this.getMarkdownThemeWithSettings()));
 		this.chatContainer.addChild(new DynamicBorder());
 		this.ui.requestRender();
 	}
