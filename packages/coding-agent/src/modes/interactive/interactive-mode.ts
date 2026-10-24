@@ -116,6 +116,7 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
+import { applyTodoAction, getTodoState, parseTodoCommand, TODOS_ENTRY_TYPE } from "../../core/todos.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
@@ -3259,6 +3260,11 @@ export class InteractiveMode {
 			}
 			if (text === "/session") {
 				this.handleSessionCommand();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todos" || text.startsWith("/todos ")) {
+				this.handleTodosCommand(text.slice("/todos".length));
 				this.editor.setText("");
 				return;
 			}
@@ -6705,6 +6711,41 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodosCommand(args: string): void {
+		const parsed = parseTodoCommand(args);
+		if (parsed.type === "error") {
+			this.showWarning(parsed.error);
+			return;
+		}
+		let state = getTodoState(this.sessionManager.getBranch());
+		if (parsed.type === "action") {
+			const result = applyTodoAction(state, parsed.action);
+			if (!result.ok) {
+				this.showWarning(result.error);
+				return;
+			}
+			state = result.state;
+			this.sessionManager.appendCustomEntry(TODOS_ENTRY_TYPE, state);
+		}
+
+		const renderTodos = (): string => {
+			if (state.items.length === 0) {
+				return theme.fg("dim", "No todos. Use /todos add <text>");
+			}
+			const doneCount = state.items.filter((item) => item.done).length;
+			let info = `${theme.bold("Todos")} ${theme.fg("dim", `(${doneCount}/${state.items.length} done)`)}\n`;
+			for (const item of state.items) {
+				const mark = item.done ? theme.fg("success", "✓") : theme.fg("dim", "○");
+				const label = item.done ? theme.fg("dim", item.text) : item.text;
+				info += `\n${mark} ${theme.fg("dim", `#${item.id}`)} ${label}`;
+			}
+			return info;
+		};
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(renderTodos, 1, 0));
 		this.ui.requestRender();
 	}
 
