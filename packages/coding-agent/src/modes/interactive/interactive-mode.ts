@@ -123,6 +123,7 @@ import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core
 import { getUsageCostBreakdown } from "../../core/usage-totals.ts";
 import { addMcpServerConfig, loadMcpConfig } from "../../extensions/mcp/config.ts";
 import { getChangelogPath, getNewEntries, normalizeChangelogLinks, parseChangelog } from "../../utils/changelog.ts";
+import { scanTodos } from "../../utils/todos.ts";
 import { copyToClipboard, readClipboardFilePaths, readClipboardText } from "../../utils/clipboard.ts";
 import { extensionForImageMimeType, readClipboardImage } from "../../utils/clipboard-image.ts";
 import { parseGitUrl } from "../../utils/git.ts";
@@ -3265,6 +3266,11 @@ export class InteractiveMode {
 			if (text === "/changelog") {
 				this.handleChangelogCommand();
 				this.editor.setText("");
+				return;
+			}
+			if (text === "/todos") {
+				this.editor.setText("");
+				await this.handleTodosCommand();
 				return;
 			}
 			if (text === "/hotkeys") {
@@ -6807,6 +6813,40 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new Markdown(changelogMarkdown, 1, 1, this.getMarkdownThemeWithSettings()));
 		this.chatContainer.addChild(new DynamicBorder());
+		this.ui.requestRender();
+	}
+
+	private async handleTodosCommand(): Promise<void> {
+		let result: Awaited<ReturnType<typeof scanTodos>>;
+		try {
+			result = await scanTodos(this.sessionManager.getCwd());
+		} catch (error) {
+			this.showError(`Failed to scan for TODOs: ${error instanceof Error ? error.message : String(error)}`);
+			return;
+		}
+
+		const { items, truncated } = result;
+		const renderTodos = (): string => {
+			if (items.length === 0) {
+				return theme.fg("dim", "No TODO, FIXME, HACK or XXX comments found.");
+			}
+			let out = `${theme.bold(`Outstanding TODOs (${items.length}${truncated ? "+" : ""})`)}\n`;
+			let currentFile: string | undefined;
+			for (const item of items) {
+				if (item.file !== currentFile) {
+					currentFile = item.file;
+					out += `\n${theme.fg("accent", item.file)}\n`;
+				}
+				out += `  ${theme.fg("dim", `${item.line}:`)} ${item.text}\n`;
+			}
+			if (truncated) {
+				out += `\n${theme.fg("dim", `Showing the first ${items.length} matches.`)}`;
+			}
+			return out.trimEnd();
+		};
+
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(renderTodos, 1, 0));
 		this.ui.requestRender();
 	}
 
