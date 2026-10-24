@@ -105,6 +105,7 @@ import {
 import { CredentialSynchronizationError } from "../../core/model-runtime.ts";
 import { DefaultPackageManager } from "../../core/package-manager.ts";
 import { RADIUS_MCP_URL, RADIUS_PROVIDER_ID } from "../../core/radius.ts";
+import { getRecentSessionLines, type RecentSessionLine } from "../../core/recent-sessions.ts";
 import type { ResourceDiagnostic } from "../../core/resource-loader.ts";
 import { formatMissingSessionCwdPrompt, MissingSessionCwdError } from "../../core/session-cwd.ts";
 import {
@@ -3337,6 +3338,11 @@ export class InteractiveMode {
 			if (text === "/resume") {
 				this.showSessionSelector();
 				this.editor.setText("");
+				return;
+			}
+			if (text === "/sessions") {
+				this.editor.setText("");
+				await this.handleSessionsCommand();
 				return;
 			}
 			if (text === "/quit") {
@@ -6786,6 +6792,34 @@ export class InteractiveMode {
 
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new ThemedText(renderInfo, 1, 0));
+		this.ui.requestRender();
+	}
+
+	private async handleSessionsCommand(): Promise<void> {
+		let lines: RecentSessionLine[];
+		try {
+			const sessions = await SessionManager.list(this.sessionManager.getCwd(), this.sessionManager.getSessionDir());
+			lines = getRecentSessionLines(sessions, new Date());
+		} catch (error) {
+			this.showError(`Failed to list sessions: ${error instanceof Error ? error.message : String(error)}`);
+			return;
+		}
+
+		const currentFile = this.sessionManager.getSessionFile();
+		const renderList = (): string => {
+			if (lines.length === 0) return theme.fg("dim", "No saved sessions found for this project.");
+			let info = `${theme.bold("Recent Sessions")}\n\n`;
+			for (const line of lines) {
+				const marker = line.path === currentFile ? theme.fg("accent", " (current)") : "";
+				info += `${line.title}${marker}\n`;
+				info += `  ${theme.fg("dim", `${line.age}, ${line.messageCount} messages`)}\n`;
+			}
+			info += `\n${theme.fg("dim", "Use /resume to open one.")}`;
+			return info;
+		};
+
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(renderList, 1, 0));
 		this.ui.requestRender();
 	}
 
