@@ -115,6 +115,7 @@ import {
 } from "../../core/session-manager.ts";
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
+import { runTodosCommand, TodoStore } from "../../core/todos.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
@@ -455,6 +456,7 @@ export class InteractiveMode {
 	private mainScreenRenderState: TuiMainScreenRenderState | undefined;
 	private loadedResourcesContainer: Container;
 	private chatContainer: Container;
+	private todoStore = new TodoStore();
 	private documentContainer: Container;
 	private transcriptScrollView: TuiLayouts.ScrollView | undefined;
 	private fullscreenLayoutRoot: Component | undefined;
@@ -3254,6 +3256,11 @@ export class InteractiveMode {
 			}
 			if (text === "/name" || text.startsWith("/name ")) {
 				this.handleNameCommand(text);
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todos" || text.startsWith("/todos ")) {
+				this.handleTodosCommand(text.slice("/todos".length));
 				this.editor.setText("");
 				return;
 			}
@@ -6786,6 +6793,17 @@ export class InteractiveMode {
 
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new ThemedText(renderInfo, 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodosCommand(args: string): void {
+		const result = runTodosCommand(this.todoStore, args);
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(
+			result.isError
+				? new ThemedText(() => theme.fg("error", result.message), 1, 0)
+				: new Markdown(result.message, 1, 0, this.getMarkdownThemeWithSettings()),
+		);
 		this.ui.requestRender();
 	}
 
