@@ -65,6 +65,7 @@ import {
 	getDocsPath,
 	VERSION,
 } from "../../config.ts";
+import { formatAboutText } from "../../core/about.ts";
 import { type AgentSession, type AgentSessionEvent, parseSkillBlock } from "../../core/agent-session.ts";
 import { type AgentSessionRuntime, SessionImportFileNotFoundError } from "../../core/agent-session-runtime.ts";
 import type { AgentSessionRuntimeDiagnostic } from "../../core/agent-session-services.ts";
@@ -3264,6 +3265,13 @@ export class InteractiveMode {
 			}
 			if (text === "/changelog") {
 				this.handleChangelogCommand();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/about") {
+				this.chatContainer.addChild(new Spacer(1));
+				this.chatContainer.addChild(new Text(formatAboutText(), 1, 0));
+				this.ui.requestRender();
 				this.editor.setText("");
 				return;
 			}
