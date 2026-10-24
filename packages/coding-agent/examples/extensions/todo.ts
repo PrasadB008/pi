@@ -38,12 +38,12 @@ const TodoParams = Type.Object({
 const SORT_MODES = ["id", "status", "text"] as const;
 type SortMode = (typeof SORT_MODES)[number];
 
-function isSortMode(value: string): value is SortMode {
+export function isSortMode(value: string): value is SortMode {
 	return (SORT_MODES as readonly string[]).includes(value);
 }
 
 /** Return a sorted copy of the todos. Ties fall back to id order. */
-function sortTodos(todos: Todo[], mode: SortMode): Todo[] {
+export function sortTodos(todos: Todo[], mode: SortMode): Todo[] {
 	const sorted = [...todos];
 	switch (mode) {
 		case "id":
