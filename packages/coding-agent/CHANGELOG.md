@@ -4,6 +4,7 @@
 
 ### Added
 
+- Added a built-in `/todos` command to show and edit an in-memory todo list (`/todos add <text>`, `/todos done <id>`, `/todos rm <id>`, `/todos clear`). It takes precedence over the `/todos` command of the `todo.ts` and `plan-mode` example extensions when those are loaded.
 - Added a Models Configuration reference generated from the `models.json` schema, listing all provider, model, model override, and compatibility fields ([#10790](https://github.com/earendil-works/pi/issues/10790))
 
 ### Changed

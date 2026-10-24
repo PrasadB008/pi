@@ -116,6 +116,7 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
+import { runTodosCommand, TodoStore } from "../../core/todos.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
@@ -491,6 +492,7 @@ export class InteractiveMode {
 	private lastSigintTime = 0;
 	private lastEscapeTime = 0;
 	private changelogMarkdown: string | undefined = undefined;
+	private readonly todoStore = new TodoStore();
 	private startupNoticesShown = false;
 	private anthropicSubscriptionWarningShown = false;
 
@@ -3264,6 +3266,11 @@ export class InteractiveMode {
 			}
 			if (text === "/changelog") {
 				this.handleChangelogCommand();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todos" || text.startsWith("/todos ")) {
+				this.handleTodosCommand(text.slice("/todos".length));
 				this.editor.setText("");
 				return;
 			}
@@ -6786,6 +6793,13 @@ export class InteractiveMode {
 
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new ThemedText(renderInfo, 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodosCommand(args: string): void {
+		const result = runTodosCommand(this.todoStore, args);
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new Markdown(result.message, 1, 0, this.getMarkdownThemeWithSettings()));
 		this.ui.requestRender();
 	}
 
