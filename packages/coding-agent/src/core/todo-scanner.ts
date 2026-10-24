@@ -2,6 +2,7 @@
  * Scan a project for outstanding TODO / FIXME comments.
  */
 
+import type { Dirent } from "node:fs";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { execCommand } from "./exec.ts";
@@ -37,7 +38,7 @@ async function listFilesWithGit(cwd: string): Promise<string[] | undefined> {
 }
 
 async function listFilesByWalking(cwd: string, dir = ""): Promise<string[]> {
-	let entries;
+	let entries: Dirent[];
 	try {
 		entries = await readdir(join(cwd, dir), { withFileTypes: true });
 	} catch {
