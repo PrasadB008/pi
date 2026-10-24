@@ -1,7 +1,12 @@
-import { APP_NAME } from "../config.ts";
+import { APP_NAME, VERSION } from "../config.ts";
 import type { SourceInfo } from "./source-info.ts";
 
 export type SlashCommandSource = "extension" | "prompt" | "skill";
+
+/** Text printed by the /version command. */
+export function formatVersionMessage(appName: string = APP_NAME, version: string = VERSION): string {
+	return `${appName} v${version}`;
+}
 
 export interface SlashCommandInfo {
 	name: string;

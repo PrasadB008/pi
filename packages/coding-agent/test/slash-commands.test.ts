@@ -1,11 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { BUILTIN_SLASH_COMMANDS } from "../src/core/slash-commands.ts";
+import { VERSION } from "../src/config.ts";
+import { BUILTIN_SLASH_COMMANDS, formatVersionMessage } from "../src/core/slash-commands.ts";
 
-describe("BUILTIN_SLASH_COMMANDS", () => {
-	it("registers /version with a description", () => {
+describe("/version", () => {
+	it("is registered as a built-in command", () => {
 		const command = BUILTIN_SLASH_COMMANDS.find((c) => c.name === "version");
-		expect(command).toBeDefined();
 		expect(command?.description).toBe("Show the current version");
+	});
+
+	it("prints the app name and current version", () => {
+		expect(formatVersionMessage("pi", "1.2.3")).toBe("pi v1.2.3");
+		expect(formatVersionMessage()).toMatch(new RegExp(` v${VERSION.replaceAll(".", "\\.")}$`));
 	});
 
 	it("has unique command names", () => {
