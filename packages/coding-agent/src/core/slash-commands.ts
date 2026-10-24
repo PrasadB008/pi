@@ -26,6 +26,11 @@ export const BUILTIN_SLASH_COMMANDS: ReadonlyArray<BuiltinSlashCommand> = [
 	{ name: "import", description: "Import and resume a session from a JSONL file" },
 	{ name: "share", description: "Share session via a Radius artifact or a GitHub gist" },
 	{ name: "bug", description: "Report a bug to the Pi developers", argumentHint: "<description>" },
+	{
+		name: "todos",
+		description: "Show or edit the session todo list",
+		argumentHint: "[add <text> | done <id> | undo <id> | remove <id> | clear]",
+	},
 	{ name: "copy", description: "Copy last agent message to clipboard" },
 	{ name: "name", description: "Set session display name" },
 	{ name: "session", description: "Show session info and stats" },
