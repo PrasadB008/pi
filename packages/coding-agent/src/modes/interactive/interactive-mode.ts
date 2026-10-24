@@ -116,6 +116,7 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
+import { applyTodoCommand, parseTodoCommand, reconstructTodoState, TODO_ENTRY_TYPE } from "../../core/todos.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
@@ -3249,6 +3250,11 @@ export class InteractiveMode {
 			}
 			if (text === "/copy") {
 				await this.handleCopyCommand();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6681,6 +6687,21 @@ export class InteractiveMode {
 		} catch (error) {
 			this.showError(error instanceof Error ? error.message : String(error));
 		}
+	}
+
+	private handleTodoCommand(text: string): void {
+		const command = parseTodoCommand(text);
+		if (command.action === "error") {
+			this.showWarning(command.message);
+			return;
+		}
+		const result = applyTodoCommand(reconstructTodoState(this.sessionManager.getBranch()), command);
+		if (result.changed) {
+			this.sessionManager.appendCustomEntry(TODO_ENTRY_TYPE, result.state);
+		}
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", result.message), 1, 0));
+		this.ui.requestRender();
 	}
 
 	private handleNameCommand(text: string): void {
