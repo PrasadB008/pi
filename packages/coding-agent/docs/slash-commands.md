@@ -49,6 +49,7 @@ Review a session before exporting or sharing it. Sessions can contain prompts, t
 | `/reload` | Reload keybindings, extensions, skills, templates, themes, and context files |
 | `/hotkeys` | Show active keyboard shortcuts |
 | `/changelog` | Show changelog entries |
+| `/todos` | List `TODO` and `FIXME` comments in the project, grouped by file. Comment syntax is chosen by file extension; symbolic links, build and vendor directories, large and binary files are skipped, and results stop at 200 |
 | `/quit` | Quit Pi |
 
 ## Commands added by resources

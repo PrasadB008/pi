@@ -3269,8 +3269,8 @@ export class InteractiveMode {
 				return;
 			}
 			if (text === "/todos") {
-				this.handleTodosCommand();
 				this.editor.setText("");
+				await this.handleTodosCommand();
 				return;
 			}
 			if (text === "/hotkeys") {
@@ -6816,9 +6816,15 @@ export class InteractiveMode {
 		this.ui.requestRender();
 	}
 
-	private handleTodosCommand(): void {
+	private async handleTodosCommand(): Promise<void> {
 		const cwd = this.sessionManager.getCwd();
-		const todosMarkdown = formatTodos(findTodos(cwd));
+		let todosMarkdown: string;
+		try {
+			todosMarkdown = formatTodos(await findTodos(cwd));
+		} catch (error) {
+			this.showError(`Failed to scan for TODOs: ${error instanceof Error ? error.message : String(error)}`);
+			return;
+		}
 
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new DynamicBorder());
