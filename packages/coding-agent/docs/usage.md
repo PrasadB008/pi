@@ -58,6 +58,7 @@ Pi saves sessions automatically unless session persistence is disabled.
 
 - `/new` starts a new session.
 - `/resume` opens another saved session.
+- `/sessions` lists the most recent sessions for the current project.
 - `/name` gives the current session a recognizable name.
 - `/session` shows its file, ID, message count, token usage, and cost.
 
