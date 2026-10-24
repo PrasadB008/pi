@@ -17,7 +17,10 @@ describe("todos", () => {
 
 	it("finds TODO and FIXME comments with file and line", () => {
 		mkdirSync(join(root, "src"));
-		writeFileSync(join(root, "src", "a.ts"), "const a = 1;\n// TODO: handle errors\nconst b = 2; // FIXME(bob) leak\n");
+		writeFileSync(
+			join(root, "src", "a.ts"),
+			"const a = 1;\n// TODO: handle errors\nconst b = 2; // FIXME(bob) leak\n",
+		);
 		writeFileSync(join(root, "script.py"), "# todo lowercase is ignored\n# TODO fix me\n");
 
 		const items = findTodos(root);
