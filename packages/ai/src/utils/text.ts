@@ -11,6 +11,12 @@ export function contentText(content: string | readonly Content[], separator = "\
 		.join(separator);
 }
 
+/** Count whitespace-separated words in a string. Returns 0 for empty or whitespace-only text. */
+export function countWords(text: string): number {
+	const trimmed = text.trim();
+	return trimmed.length === 0 ? 0 : trimmed.split(/\s+/).length;
+}
+
 /** Render a system message as a complete prompt: its content followed by its sections. */
 export function getSystemMessageText(message: SystemMessage): string {
 	const parts = [contentText(message.content)];

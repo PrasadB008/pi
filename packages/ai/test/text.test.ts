@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { type AssistantMessage, contentText, type ToolResultMessage } from "../src/index.ts";
+import { countWords } from "../src/utils/text.ts";
 
 const content: AssistantMessage["content"] = [
 	{ type: "thinking", thinking: "reasoning" },
@@ -29,5 +30,24 @@ describe("contentText", () => {
 		];
 
 		expect(contentText(toolResultContent, "")).toBe("firstsecond");
+	});
+});
+
+describe("countWords", () => {
+	it("counts words separated by single spaces", () => {
+		expect(countWords("one two three")).toBe(3);
+	});
+
+	it("returns 0 for empty and whitespace-only text", () => {
+		expect(countWords("")).toBe(0);
+		expect(countWords(" \n\t ")).toBe(0);
+	});
+
+	it("ignores leading, trailing and repeated whitespace", () => {
+		expect(countWords("  one \n\n two\tthree  ")).toBe(3);
+	});
+
+	it("counts a single word", () => {
+		expect(countWords("hello")).toBe(1);
 	});
 });
