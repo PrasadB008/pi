@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added `rust/`, an experimental Rust port of the span contexts (no-op and in-memory). The TypeScript package is unchanged.
+
 ## [1.3.0] - 2026-10-15
 
 ## [1.2.0] - 2026-10-12

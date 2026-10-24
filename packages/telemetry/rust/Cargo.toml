@@ -1,0 +1,8 @@
+[package]
+name = "pi-telemetry"
+version = "0.1.0"
+edition = "2024"
+description = "Rust port of @earendil-works/telemetry: span contexts and an in-memory recorder"
+publish = false
+
+[dependencies]

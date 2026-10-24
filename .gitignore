@@ -39,6 +39,7 @@ out.html
 packages/coding-agent/binaries/
 packages/env/bin/
 packages/env/daemon/target/
+packages/telemetry/rust/target/
 todo.md
 plans/
 .pi/hf-sessions/
