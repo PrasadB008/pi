@@ -3,7 +3,8 @@
  *
  * This extension:
  * - Registers a `todo` tool for the LLM to manage todos
- * - Registers a `/todos` command for users to view the list
+ * - Registers a `/todos [id|status|text]` command for users to view the list,
+ *   sortable via the argument or by pressing S in the view
  *
  * State is stored in tool result details (not external files), which allows
  * proper branching - when you branch, the todo state is automatically
@@ -34,6 +35,27 @@ const TodoParams = Type.Object({
 	id: Type.Optional(Type.Number({ description: "Todo ID (for toggle)" })),
 });
 
+const SORT_MODES = ["id", "status", "text"] as const;
+type SortMode = (typeof SORT_MODES)[number];
+
+function isSortMode(value: string): value is SortMode {
+	return (SORT_MODES as readonly string[]).includes(value);
+}
+
+/** Return a sorted copy of the todos. Ties fall back to id order. */
+function sortTodos(todos: Todo[], mode: SortMode): Todo[] {
+	const sorted = [...todos];
+	switch (mode) {
+		case "id":
+			return sorted.sort((a, b) => a.id - b.id);
+		case "status":
+			// Open todos first, then completed
+			return sorted.sort((a, b) => Number(a.done) - Number(b.done) || a.id - b.id);
+		case "text":
+			return sorted.sort((a, b) => a.text.localeCompare(b.text) || a.id - b.id);
+	}
+}
+
 /**
  * UI component for the /todos command
  */
@@ -41,18 +63,24 @@ class TodoListComponent {
 	private todos: Todo[];
 	private theme: Theme;
 	private onClose: () => void;
+	private sortMode: SortMode;
 	private cachedWidth?: number;
 	private cachedLines?: string[];
 
-	constructor(todos: Todo[], theme: Theme, onClose: () => void) {
+	constructor(todos: Todo[], theme: Theme, onClose: () => void, sortMode: SortMode = "id") {
 		this.todos = todos;
 		this.theme = theme;
 		this.onClose = onClose;
+		this.sortMode = sortMode;
 	}
 
 	handleInput(data: string): void {
 		if (matchesKey(data, "escape") || matchesKey(data, "ctrl+c")) {
 			this.onClose();
+		} else if (matchesKey(data, "s")) {
+			// Cycle through sort modes
+			this.sortMode = SORT_MODES[(SORT_MODES.indexOf(this.sortMode) + 1) % SORT_MODES.length];
+			this.invalidate();
 		}
 	}
 
@@ -76,10 +104,11 @@ class TodoListComponent {
 		} else {
 			const done = this.todos.filter((t) => t.done).length;
 			const total = this.todos.length;
-			lines.push(truncateToWidth(`  ${th.fg("muted", `${done}/${total} completed`)}`, width));
+			const summary = `${th.fg("muted", `${done}/${total} completed`)} ${th.fg("dim", `(sorted by ${this.sortMode})`)}`;
+			lines.push(truncateToWidth(`  ${summary}`, width));
 			lines.push("");
 
-			for (const todo of this.todos) {
+			for (const todo of sortTodos(this.todos, this.sortMode)) {
 				const check = todo.done ? th.fg("success", "✓") : th.fg("dim", "○");
 				const id = th.fg("accent", `#${todo.id}`);
 				const text = todo.done ? th.fg("dim", todo.text) : th.fg("text", todo.text);
@@ -88,7 +117,7 @@ class TodoListComponent {
 		}
 
 		lines.push("");
-		lines.push(truncateToWidth(`  ${th.fg("dim", "Press Escape to close")}`, width));
+		lines.push(truncateToWidth(`  ${th.fg("dim", "Press S to change sort, Escape to close")}`, width));
 		lines.push("");
 
 		this.cachedWidth = width;
@@ -282,15 +311,22 @@ export default function (pi: ExtensionAPI) {
 
 	// Register the /todos command for users
 	pi.registerCommand("todos", {
-		description: "Show all todos on the current branch",
-		handler: async (_args, ctx) => {
+		description: `Show all todos on the current branch (optional sort: ${SORT_MODES.join("|")})`,
+		handler: async (args, ctx) => {
 			if (ctx.mode !== "tui") {
 				ctx.ui.notify("/todos requires interactive mode", "error");
 				return;
 			}
 
+			const requested = args.trim().toLowerCase();
+			if (requested && !isSortMode(requested)) {
+				ctx.ui.notify(`Unknown sort "${requested}". Use: ${SORT_MODES.join(", ")}`, "error");
+				return;
+			}
+			const sortMode: SortMode = isSortMode(requested) ? requested : "id";
+
 			await ctx.ui.custom<void>((_tui, theme, _kb, done) => {
-				return new TodoListComponent(todos, theme, () => done());
+				return new TodoListComponent(todos, theme, () => done(), sortMode);
 			});
 		},
 	});
