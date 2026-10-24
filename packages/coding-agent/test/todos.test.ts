@@ -56,7 +56,14 @@ describe("applyTodoCommand", () => {
 describe("getTodoState", () => {
 	it("uses the latest snapshot on the branch", () => {
 		const entry = (data: unknown): SessionEntry =>
-			({ type: "custom", customType: TODOS_ENTRY_TYPE, data, id: "x", parentId: null, timestamp: "" }) as SessionEntry;
+			({
+				type: "custom",
+				customType: TODOS_ENTRY_TYPE,
+				data,
+				id: "x",
+				parentId: null,
+				timestamp: "",
+			}) as SessionEntry;
 		const first = applyTodoCommand(emptyTodoState(), { action: "add", text: "a" }).state;
 		const second = applyTodoCommand(first, { action: "add", text: "b" }).state;
 		expect(getTodoState([entry(first), entry({ junk: true }), entry(second)])).toEqual(second);
@@ -66,10 +73,10 @@ describe("getTodoState", () => {
 
 describe("formatTodoList", () => {
 	it("renders items with completion counts", () => {
-		const state = applyTodoCommand(
-			applyTodoCommand(emptyTodoState(), { action: "add", text: "a" }).state,
-			{ action: "toggle", id: 1 },
-		).state;
+		const state = applyTodoCommand(applyTodoCommand(emptyTodoState(), { action: "add", text: "a" }).state, {
+			action: "toggle",
+			id: 1,
+		}).state;
 		expect(formatTodoList(state)).toBe("Todos (1/1 completed)\n[x] #1 a");
 		expect(formatTodoList(emptyTodoState())).toContain("No todos yet");
 	});
