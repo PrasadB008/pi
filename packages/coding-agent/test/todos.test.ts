@@ -27,6 +27,22 @@ describe("parseTodoCommand", () => {
 		expect(parseTodoCommand("/todo add").action).toBe("usage");
 		expect(parseTodoCommand("/todo done abc").action).toBe("usage");
 	});
+
+	it("does not treat list or clear followed by text as a command", () => {
+		expect(parseTodoCommand("/todo clear the cache directory")).toEqual({
+			action: "add",
+			text: "clear the cache directory",
+		});
+		expect(parseTodoCommand("/todo list groceries")).toEqual({ action: "add", text: "list groceries" });
+		expect(parseTodoCommand("/todo list")).toEqual({ action: "list" });
+	});
+
+	it("accepts only decimal ids", () => {
+		for (const bad of ["0x2", "1e1", "0b11", "-1", "1.5", "0"]) {
+			expect(parseTodoCommand(`/todo done ${bad}`).action).toBe("usage");
+		}
+		expect(parseTodoCommand("/todo done 12")).toEqual({ action: "done", id: 12 });
+	});
 });
 
 describe("applyTodoCommand", () => {

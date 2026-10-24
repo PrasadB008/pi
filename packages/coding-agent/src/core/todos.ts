@@ -66,16 +66,18 @@ export function parseTodoCommand(text: string): TodoCommand {
 
 	switch (verb) {
 		case "list":
-			return { action: "list" };
 		case "clear":
-			return { action: "clear" };
+			// Exact match only, so "/todo clear the cache" is added as a todo instead of clearing the list.
+			if (!rest) return { action: verb };
+			return { action: "add", text: args };
 		case "add":
 			return rest ? { action: "add", text: rest } : { action: "usage", message: "Usage: /todo add <text>" };
 		case "done":
 		case "undo":
 		case "remove": {
-			const id = Number(rest.replace(/^#/, ""));
-			if (!Number.isInteger(id) || id < 1) {
+			const idText = rest.replace(/^#/, "");
+			const id = /^\d+$/.test(idText) ? Number(idText) : 0;
+			if (!Number.isSafeInteger(id) || id < 1) {
 				return { action: "usage", message: `Usage: /todo ${verb} <id>` };
 			}
 			return { action: verb, id };
