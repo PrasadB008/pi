@@ -45,13 +45,28 @@ export function parseTodoLines(output: string): TodoItem[] {
 }
 
 /**
- * Scan a directory for TODO, FIXME, HACK and XXX markers using ripgrep.
- * Respects .gitignore. Throws if ripgrep is unavailable or fails.
+ * Longest part of a single output line that is kept in memory. Longer lines (for example minified files)
+ * are cut; the text is shortened to MAX_TEXT_LENGTH anyway, and the path and line number come first.
  */
-export async function scanTodos(cwd: string, limit: number = DEFAULT_TODO_LIMIT): Promise<TodoScanResult> {
+const MAX_PENDING_LINE_LENGTH = 64 * 1024;
+
+/**
+ * Scan a directory for TODO, FIXME, HACK and XXX markers using ripgrep.
+ * Respects .gitignore (also outside a git repository). Output is parsed as it streams and ripgrep is
+ * stopped as soon as more than `limit` matches have been seen. Throws if ripgrep is unavailable or fails,
+ * or if `signal` is aborted.
+ */
+export async function scanTodos(
+	cwd: string,
+	limit: number = DEFAULT_TODO_LIMIT,
+	signal?: AbortSignal,
+): Promise<TodoScanResult> {
 	const rgPath = await ensureTool("rg");
 	if (!rgPath) {
 		throw new Error("ripgrep (rg) is not available");
+	}
+	if (signal?.aborted) {
+		throw new Error("TODO scan aborted");
 	}
 
 	const args = [
@@ -59,10 +74,9 @@ export async function scanTodos(cwd: string, limit: number = DEFAULT_TODO_LIMIT)
 		"--line-number",
 		"--color=never",
 		"--hidden",
+		"--no-require-git",
 		"--glob",
 		"!.git",
-		"--max-columns",
-		"1000",
 		"-e",
 		TODO_PATTERN,
 		"--sort",
@@ -70,29 +84,60 @@ export async function scanTodos(cwd: string, limit: number = DEFAULT_TODO_LIMIT)
 		".",
 	];
 
-	const output = await new Promise<string>((resolve, reject) => {
+	return new Promise<TodoScanResult>((resolve, reject) => {
 		const child = spawn(rgPath, args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
-		let stdout = "";
+		const items: TodoItem[] = [];
+		let pending = "";
 		let stderr = "";
+		let stoppedEarly = false;
+		let settled = false;
+
+		const finish = (action: () => void) => {
+			if (settled) return;
+			settled = true;
+			signal?.removeEventListener("abort", onAbort);
+			action();
+		};
+		const onAbort = () => {
+			child.kill();
+			finish(() => reject(new Error("TODO scan aborted")));
+		};
+		signal?.addEventListener("abort", onAbort, { once: true });
+
+		const handleLine = (line: string) => {
+			if (stoppedEarly) return;
+			const item = parseTodoLines(line)[0];
+			if (!item) return;
+			items.push({ ...item, file: item.file.replace(/^\.[\\/]/, "") });
+			if (items.length > limit) {
+				stoppedEarly = true;
+				child.kill();
+			}
+		};
+
 		child.stdout.setEncoding("utf8");
 		child.stderr.setEncoding("utf8");
 		child.stdout.on("data", (chunk: string) => {
-			stdout += chunk;
+			if (stoppedEarly) return;
+			const lines = (pending + chunk).split("\n");
+			pending = lines.pop() ?? "";
+			if (pending.length > MAX_PENDING_LINE_LENGTH) pending = pending.slice(0, MAX_PENDING_LINE_LENGTH);
+			for (const line of lines) handleLine(line);
 		});
 		child.stderr.on("data", (chunk: string) => {
-			stderr += chunk;
+			if (stderr.length < MAX_PENDING_LINE_LENGTH) stderr += chunk;
 		});
-		child.on("error", (error) => reject(new Error(`Failed to run ripgrep: ${error.message}`)));
+		child.on("error", (error) => finish(() => reject(new Error(`Failed to run ripgrep: ${error.message}`))));
 		child.on("close", (code) => {
-			// Exit code 1 means no matches.
-			if (code === 0 || code === 1) {
-				resolve(stdout);
-			} else {
-				reject(new Error(stderr.trim() || `ripgrep exited with code ${code}`));
-			}
+			if (!stoppedEarly && pending) handleLine(pending);
+			finish(() => {
+				// Exit code 1 means no matches. A killed child is expected when we stopped early.
+				if (stoppedEarly || code === 0 || code === 1) {
+					resolve({ items: items.slice(0, limit), truncated: items.length > limit });
+				} else {
+					reject(new Error(stderr.trim() || `ripgrep exited with code ${code}`));
+				}
+			});
 		});
 	});
-
-	const items = parseTodoLines(output).map((item) => ({ ...item, file: item.file.replace(/^\.[\\/]/, "") }));
-	return { items: items.slice(0, limit), truncated: items.length > limit };
 }

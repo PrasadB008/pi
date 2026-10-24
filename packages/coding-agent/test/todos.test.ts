@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { parseTodoLines, scanTodos } from "../src/utils/todos.ts";
+import { getToolPath } from "../src/utils/tools-manager.ts";
 
 describe("parseTodoLines", () => {
 	it("parses path:line:text output and extracts the tag", () => {
@@ -22,7 +23,8 @@ describe("parseTodoLines", () => {
 	});
 });
 
-describe("scanTodos", () => {
+// scanTodos needs a ripgrep binary; do not depend on downloading one.
+describe.skipIf(!getToolPath("rg"))("scanTodos", () => {
 	const dirs: string[] = [];
 	afterEach(() => {
 		for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
@@ -46,5 +48,33 @@ describe("scanTodos", () => {
 		const limited = await scanTodos(dir, 2);
 		expect(limited.items).toHaveLength(2);
 		expect(limited.truncated).toBe(true);
+	});
+
+	it("honors .gitignore outside a git repository", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pi-todos-"));
+		dirs.push(dir);
+		mkdirSync(join(dir, "dist"));
+		writeFileSync(join(dir, ".gitignore"), "dist/\n");
+		writeFileSync(join(dir, "dist", "out.js"), "// TODO: generated\n");
+		writeFileSync(join(dir, "a.ts"), "// TODO: real\n");
+
+		const result = await scanTodos(dir);
+		expect(result.items.map((i) => i.file)).toEqual(["a.ts"]);
+	});
+
+	it("reports markers on very long lines", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pi-todos-"));
+		dirs.push(dir);
+		writeFileSync(join(dir, "min.js"), `// TODO ${"x".repeat(5000)}\n`);
+
+		const result = await scanTodos(dir);
+		expect(result.items).toHaveLength(1);
+		expect(result.items[0].tag).toBe("TODO");
+	});
+
+	it("rejects when the signal is already aborted", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pi-todos-"));
+		dirs.push(dir);
+		await expect(scanTodos(dir, 10, AbortSignal.abort())).rejects.toThrow("aborted");
 	});
 });
