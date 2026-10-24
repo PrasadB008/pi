@@ -3267,6 +3267,11 @@ export class InteractiveMode {
 				this.editor.setText("");
 				return;
 			}
+			if (text === "/version") {
+				this.showStatus(`${APP_NAME} v${VERSION}`);
+				this.editor.setText("");
+				return;
+			}
 			if (text === "/hotkeys") {
 				this.handleHotkeysCommand();
 				this.editor.setText("");
