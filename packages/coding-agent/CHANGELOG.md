@@ -5,6 +5,7 @@
 ### Added
 
 - Added a Models Configuration reference generated from the `models.json` schema, listing all provider, model, model override, and compatibility fields ([#10790](https://github.com/earendil-works/pi/issues/10790))
+- Added a built-in `/todos` slash command with `add`, `done`, `undo`, `rm` and `clear` subcommands. The list is stored in the session and follows forks and resumes.
 
 ### Changed
 
