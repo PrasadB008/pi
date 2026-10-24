@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { BUILTIN_SLASH_COMMANDS } from "../src/core/slash-commands.ts";
 import { SessionManager } from "../src/core/session-manager.ts";
-import { applyTodoCommand, EMPTY_TODO_STATE, reconstructTodoState, TODOS_CUSTOM_ENTRY_TYPE } from "../src/core/todos.ts";
+import { BUILTIN_SLASH_COMMANDS } from "../src/core/slash-commands.ts";
+import {
+	applyTodoCommand,
+	EMPTY_TODO_STATE,
+	reconstructTodoState,
+	TODOS_CUSTOM_ENTRY_TYPE,
+} from "../src/core/todos.ts";
 
 describe("/todos", () => {
 	it("is registered as a built-in command", () => {
