@@ -45,9 +45,10 @@ register([".go", ".rs", ".swift", ".kt", ".scala", ".dart", ".css", ".scss", ".l
 register([".php"], [SLASH_COMMENT, HASH_COMMENT]);
 register([".vue", ".svelte"], [SLASH_COMMENT, HTML_COMMENT]);
 register([".html", ".htm", ".xml", ".md", ".mdx"], [HTML_COMMENT]);
-register([".py", ".rb", ".sh", ".bash", ".zsh", ".fish", ".yml", ".yaml", ".toml", ".pl", ".r", ".ex", ".exs"], [
-	HASH_COMMENT,
-]);
+register(
+	[".py", ".rb", ".sh", ".bash", ".zsh", ".fish", ".yml", ".yaml", ".toml", ".pl", ".r", ".ex", ".exs"],
+	[HASH_COMMENT],
+);
 register([".sql", ".lua", ".hs"], [DASH_COMMENT]);
 
 /** Compare strings by UTF-16 code units so ordering does not depend on the user's locale. */
