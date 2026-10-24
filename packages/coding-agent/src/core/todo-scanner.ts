@@ -29,7 +29,7 @@ const IGNORED_DIRS = new Set([".git", "node_modules", "dist", "build", "coverage
 
 // Marker must be a whole word, preceded by a comment-like context to avoid matching prose
 // such as "todos" or a variable named `todo`. Only upper-case markers count.
-const TODO_PATTERN = /(?:\/\/|\/\*|\*|#|--|<!--|;|%)\s*(TODO|FIXME|XXX|HACK)\b[\s:(-]*(.*)$/;
+const TODO_PATTERN = /(?:\/\/|\/\*|\*|#|--|<!--|;|%)\s*(TODO|FIXME|XXX|HACK)\b(?:\([^)]*\))?[\s:-]*(.*)$/;
 
 export function parseTodoLine(line: string): { tag: string; text: string } | undefined {
 	const match = TODO_PATTERN.exec(line);
