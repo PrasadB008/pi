@@ -97,6 +97,7 @@ import { configureHttpDispatcher, formatHttpIdleTimeoutMs } from "../../core/htt
 import { type AppKeybinding, KeybindingsManager } from "../../core/keybindings.ts";
 import type { McpHttpServerConfig } from "../../core/mcp-servers.ts";
 import { createCompactionSummaryMessage, createCustomMessage } from "../../core/messages.ts";
+import { formatMemoryUsage } from "../../core/memory-usage.ts";
 import {
 	defaultModelPerProvider,
 	findExactModelReferenceMatch,
@@ -3269,6 +3270,11 @@ export class InteractiveMode {
 			}
 			if (text === "/hotkeys") {
 				this.handleHotkeysCommand();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/memusage") {
+				this.handleMemusageCommand();
 				this.editor.setText("");
 				return;
 			}
@@ -6822,6 +6828,13 @@ export class InteractiveMode {
 	 */
 	private getEditorKeyDisplay(action: Keybinding): string {
 		return keyDisplayText(action);
+	}
+
+	private handleMemusageCommand(): void {
+		const info = formatMemoryUsage(process.memoryUsage());
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new Text(info, 1, 0));
+		this.ui.requestRender();
 	}
 
 	private handleHotkeysCommand(): void {
