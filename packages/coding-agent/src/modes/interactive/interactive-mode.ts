@@ -3272,6 +3272,13 @@ export class InteractiveMode {
 				this.editor.setText("");
 				return;
 			}
+			if (text === "/foo") {
+				this.chatContainer.addChild(new Spacer(1));
+				this.chatContainer.addChild(new ThemedText(() => "foo", 1, 0));
+				this.ui.requestRender();
+				this.editor.setText("");
+				return;
+			}
 			if (text === "/fork") {
 				this.showUserMessageSelector();
 				this.editor.setText("");
