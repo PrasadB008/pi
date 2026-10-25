@@ -3267,6 +3267,11 @@ export class InteractiveMode {
 				this.editor.setText("");
 				return;
 			}
+			if (text === "/foo") {
+				this.showStatus("foo");
+				this.editor.setText("");
+				return;
+			}
 			if (text === "/hotkeys") {
 				this.handleHotkeysCommand();
 				this.editor.setText("");
