@@ -78,6 +78,7 @@ import {
 import { formatCacheWarmingStatus, formatCacheWarmingUsage } from "../../core/cache-warmer.ts";
 import { findExtensionStackMatches, recordCrash, takeUnnotifiedCrash } from "../../core/crash-log.ts";
 import { DEFAULT_THINKING_LEVEL, THINKING_LEVEL_OPTIONS } from "../../core/defaults.ts";
+import { formatEnvInfo } from "../../core/env-info.ts";
 import type {
 	AutocompleteProviderFactory,
 	EditorFactory,
@@ -3259,6 +3260,11 @@ export class InteractiveMode {
 			}
 			if (text === "/session") {
 				this.handleSessionCommand();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/envinfo") {
+				this.handleEnvInfoCommand();
 				this.editor.setText("");
 				return;
 			}
@@ -6705,6 +6711,13 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleEnvInfoCommand(): void {
+		const text = formatEnvInfo({ nodeVersion: process.version, platform: process.platform, piVersion: VERSION });
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new Text(text, 1, 0));
 		this.ui.requestRender();
 	}
 
