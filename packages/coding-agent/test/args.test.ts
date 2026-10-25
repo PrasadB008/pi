@@ -13,6 +13,13 @@ describe("parseArgs", () => {
 			expect(result.version).toBe(true);
 		});
 
+		test("parses --print-ver alias without enabling print mode", () => {
+			const result = parseArgs(["--print-ver"]);
+			expect(result.version).toBe(true);
+			expect(result.print).toBeUndefined();
+			expect(result.unknownFlags.size).toBe(0);
+		});
+
 		test("--version takes precedence over other args", () => {
 			const result = parseArgs(["--version", "--help", "some message"]);
 			expect(result.version).toBe(true);

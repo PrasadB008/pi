@@ -91,7 +91,7 @@ export function parseArgs(args: string[]): Args {
 			break;
 		} else if (arg === "--help" || arg === "-h") {
 			result.help = true;
-		} else if (arg === "--version" || arg === "-v") {
+		} else if (arg === "--version" || arg === "--print-ver" || arg === "-v") {
 			result.version = true;
 		} else if (arg === "--mode") {
 			const mode = args[i + 1];
