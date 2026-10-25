@@ -8,6 +8,12 @@ describe("parseArgs", () => {
 			expect(result.version).toBe(true);
 		});
 
+		test("parses --display-version alias", () => {
+			const result = parseArgs(["--display-version"]);
+			expect(result.version).toBe(true);
+			expect(result.unknownFlags.size).toBe(0);
+		});
+
 		test("parses -v shorthand", () => {
 			const result = parseArgs(["-v"]);
 			expect(result.version).toBe(true);
