@@ -38,16 +38,11 @@ const IGNORED_DIRS = new Set([
 	"__pycache__",
 ]);
 
-const IGNORED_FILES = new Set([
-	"package-lock.json",
-	"yarn.lock",
-	"pnpm-lock.yaml",
-	"CHANGELOG.md",
-]);
+const IGNORED_FILES = new Set(["package-lock.json", "yarn.lock", "pnpm-lock.yaml", "CHANGELOG.md"]);
 
 // A marker only counts when preceded by a comment-like prefix (//, #, /*, *, --, <!--, ;, %)
 // so that identifiers like `findTodos` or prose like "a todo list" do not match.
-const TODO_PATTERN = /(?:\/\/|\/\*|\*|#|--|<!--|;|%)\s*(TODO|FIXME|HACK|XXX)\b[\s:(\-]*(.*)$/i;
+const TODO_PATTERN = /(?:\/\/|\/\*|\*|#|--|<!--|;|%)\s*(TODO|FIXME|HACK|XXX)\b(?:\([^)]*\))?[\s:-]*(.*)$/i;
 
 const DEFAULT_MAX_ITEMS = 500;
 const DEFAULT_MAX_FILE_BYTES = 1024 * 1024;
@@ -55,7 +50,10 @@ const DEFAULT_MAX_FILE_BYTES = 1024 * 1024;
 export function parseTodoLine(line: string): { tag: string; text: string } | undefined {
 	const match = TODO_PATTERN.exec(line);
 	if (!match) return undefined;
-	const text = match[2].replace(/\*\/\s*$/, "").replace(/-->\s*$/, "").trim();
+	const text = match[2]
+		.replace(/\*\/\s*$/, "")
+		.replace(/-->\s*$/, "")
+		.trim();
 	return { tag: match[1].toUpperCase(), text };
 }
 
