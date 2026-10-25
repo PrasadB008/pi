@@ -115,6 +115,7 @@ import {
 } from "../../core/session-manager.ts";
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
+import { findTodos, formatTodosMarkdown } from "../../core/todos.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
@@ -3264,6 +3265,11 @@ export class InteractiveMode {
 			}
 			if (text === "/changelog") {
 				this.handleChangelogCommand();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todos") {
+				this.handleTodosCommand();
 				this.editor.setText("");
 				return;
 			}
@@ -6806,6 +6812,19 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new ThemedText(() => theme.bold(theme.fg("accent", "What's New")), 1, 0));
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new Markdown(changelogMarkdown, 1, 1, this.getMarkdownThemeWithSettings()));
+		this.chatContainer.addChild(new DynamicBorder());
+		this.ui.requestRender();
+	}
+
+	private handleTodosCommand(): void {
+		const cwd = this.sessionManager.getCwd();
+		const markdown = formatTodosMarkdown(findTodos(cwd));
+
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new DynamicBorder());
+		this.chatContainer.addChild(new ThemedText(() => theme.bold(theme.fg("accent", "TODOs")), 1, 0));
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new Markdown(markdown, 1, 1, this.getMarkdownThemeWithSettings()));
 		this.chatContainer.addChild(new DynamicBorder());
 		this.ui.requestRender();
 	}
