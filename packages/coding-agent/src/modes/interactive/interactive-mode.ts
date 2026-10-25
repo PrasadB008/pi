@@ -115,6 +115,7 @@ import {
 } from "../../core/session-manager.ts";
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
+import { formatUptime } from "../../core/uptime.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
@@ -475,6 +476,7 @@ export class InteractiveMode {
 	// Stored so the same manager can be injected into custom editors, selectors, and extension UI.
 	private keybindings: KeybindingsManager;
 	private version: string;
+	private readonly startedAt = Date.now();
 	private isInitialized = false;
 	private onInputCallback?: (text: string) => void;
 	private pendingUserInputs: string[] = [];
@@ -3259,6 +3261,11 @@ export class InteractiveMode {
 			}
 			if (text === "/session") {
 				this.handleSessionCommand();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/uptime2") {
+				this.handleUptimeCommand();
 				this.editor.setText("");
 				return;
 			}
@@ -6786,6 +6793,13 @@ export class InteractiveMode {
 
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new ThemedText(renderInfo, 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleUptimeCommand(): void {
+		const uptime = formatUptime(Date.now() - this.startedAt);
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session uptime: ${uptime}`), 1, 0));
 		this.ui.requestRender();
 	}
 
