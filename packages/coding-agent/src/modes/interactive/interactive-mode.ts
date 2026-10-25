@@ -132,6 +132,7 @@ import { getPiUserAgent } from "../../utils/pi-user-agent.ts";
 import { killTrackedDetachedChildren } from "../../utils/shell.ts";
 import { loadAllHighlightLanguages } from "../../utils/syntax-highlight.ts";
 import { ensureTool, type ToolStatus } from "../../utils/tools-manager.ts";
+import { formatUptime } from "../../utils/uptime.ts";
 import { checkForNewPiVersion, type LatestPiRelease } from "../../utils/version-check.ts";
 import { reportBug } from "./bug-report.ts";
 import { createChatViewport } from "./chat-viewport.ts";
@@ -449,6 +450,7 @@ export interface InteractiveModeOptions {
 }
 
 export class InteractiveMode {
+	private readonly startedAt = Date.now();
 	private runtimeHost: AgentSessionRuntime;
 	private renderer: TuiMainScreen | TuiAltScreen;
 	private ui: TUI;
@@ -3259,6 +3261,11 @@ export class InteractiveMode {
 			}
 			if (text === "/session") {
 				this.handleSessionCommand();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/uptime2") {
+				this.handleUptimeCommand();
 				this.editor.setText("");
 				return;
 			}
@@ -6786,6 +6793,13 @@ export class InteractiveMode {
 
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new ThemedText(renderInfo, 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleUptimeCommand(): void {
+		const uptime = formatUptime(Date.now() - this.startedAt);
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(() => `${theme.fg("dim", "Uptime:")} ${uptime}`, 1, 0));
 		this.ui.requestRender();
 	}
 
