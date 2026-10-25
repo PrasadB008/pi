@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { type Dirent, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 export interface TodoItem {
@@ -39,7 +39,7 @@ export function findTodos(root: string): TodoItem[] {
 	let fileCount = 0;
 
 	const walk = (dir: string): void => {
-		let entries;
+		let entries: Dirent[];
 		try {
 			entries = readdirSync(dir, { withFileTypes: true });
 		} catch {
