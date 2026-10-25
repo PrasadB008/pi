@@ -5,6 +5,7 @@
 ### Added
 
 - Added a Models Configuration reference generated from the `models.json` schema, listing all provider, model, model override, and compatibility fields ([#10790](https://github.com/earendil-works/pi/issues/10790))
+- Added built-in `/todos` command that lists `TODO` comments found under the current project, skipping `.git`, `node_modules` and build output directories
 
 ### Changed
 
