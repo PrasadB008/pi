@@ -1,5 +1,11 @@
+import * as path from "node:path";
 import { APP_NAME } from "../config.ts";
 import type { SourceInfo } from "./source-info.ts";
+
+/** Text printed by the /pwd command: the absolute path of the session's working directory. */
+export function formatPwdOutput(cwd: string): string {
+	return path.resolve(cwd);
+}
 
 export type SlashCommandSource = "extension" | "prompt" | "skill";
 
@@ -29,6 +35,7 @@ export const BUILTIN_SLASH_COMMANDS: ReadonlyArray<BuiltinSlashCommand> = [
 	{ name: "copy", description: "Copy last agent message to clipboard" },
 	{ name: "name", description: "Set session display name" },
 	{ name: "session", description: "Show session info and stats" },
+	{ name: "pwd", description: "Print the current working directory" },
 	{ name: "changelog", description: "Show changelog entries" },
 	{ name: "hotkeys", description: "Show all keyboard shortcuts" },
 	{ name: "fork", description: "Create a new fork from a previous user message" },
