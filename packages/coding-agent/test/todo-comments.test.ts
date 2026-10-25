@@ -1,8 +1,34 @@
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { BUILTIN_SLASH_COMMANDS } from "../src/core/slash-commands.ts";
-import { formatTodoComments, parseTodoGrepOutput } from "../src/core/todo-comments.ts";
+import { findTodoComments, formatTodoComments, parseTodoGrepOutput } from "../src/core/todo-comments.ts";
 
 describe("todo comments", () => {
+	it("finds todo comments in a git work tree and ignores gitignored files", async () => {
+		const dir = mkdtempSync(join(tmpdir(), "pi-todos-"));
+		try {
+			execFileSync("git", ["init", "-q"], { cwd: dir });
+			mkdirSync(join(dir, "src"));
+			writeFileSync(join(dir, "src", "a.ts"), "const a = 1;\n// TODO: first\n// FIXME second\n");
+			writeFileSync(join(dir, "ignored.ts"), "// TODO: hidden\n");
+			writeFileSync(join(dir, ".gitignore"), "ignored.ts\n");
+
+			const todos = await findTodoComments(dir);
+			expect(todos).toEqual([
+				{ file: "src/a.ts", line: 2, tag: "TODO", text: "first" },
+				{ file: "src/a.ts", line: 3, tag: "FIXME", text: "second" },
+			]);
+
+			rmSync(join(dir, "src"), { recursive: true });
+			expect(await findTodoComments(dir)).toEqual([]);
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
 	it("parses git grep output into todo comments", () => {
 		const output = [
 			"src/a.ts:12:\t// TODO: handle errors",
@@ -13,7 +39,7 @@ describe("todo comments", () => {
 
 		expect(parseTodoGrepOutput(output)).toEqual([
 			{ file: "src/a.ts", line: 12, tag: "TODO", text: "handle errors" },
-			{ file: "src/a.ts", line: 30, tag: "FIXME", text: "bob) tidy up" },
+			{ file: "src/a.ts", line: 30, tag: "FIXME", text: "(bob) tidy up" },
 			{ file: "docs/b.md", line: 3, tag: "XXX", text: "revisit" },
 		]);
 	});

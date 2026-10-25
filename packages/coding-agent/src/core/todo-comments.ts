@@ -24,7 +24,7 @@ export function parseTodoGrepOutput(output: string): TodoComment[] {
 		if (!tagMatch) continue;
 		const text = match[3]
 			.slice(tagMatch.index + tagMatch[0].length)
-			.replace(/^[\s:(\-]+/, "")
+			.replace(/^(\([^)]*\))?[\s:-]*/, (_, owner: string | undefined) => (owner ? `${owner} ` : ""))
 			.replace(/\s*(\*\/|-->)\s*$/, "")
 			.trim();
 		results.push({ file: match[1], line: Number(match[2]), tag: tagMatch[1], text });
