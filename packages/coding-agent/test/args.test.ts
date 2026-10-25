@@ -13,6 +13,14 @@ describe("parseArgs", () => {
 			expect(result.version).toBe(true);
 		});
 
+		test("parses --about-version as an alias for --version", () => {
+			const result = parseArgs(["--about-version"]);
+			expect(result.version).toBe(true);
+			expect(result.messages).toEqual([]);
+			expect(result.unknownFlags.size).toBe(0);
+			expect(result.diagnostics).toEqual([]);
+		});
+
 		test("--version takes precedence over other args", () => {
 			const result = parseArgs(["--version", "--help", "some message"]);
 			expect(result.version).toBe(true);
