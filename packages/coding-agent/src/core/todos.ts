@@ -39,7 +39,7 @@ const IGNORED_DIRS = new Set([
 const DEFAULT_MAX_ITEMS = 200;
 const DEFAULT_MAX_FILE_SIZE = 1024 * 1024;
 
-const TODO_PATTERN = /\b(TODO|FIXME)\b[:(]?\s*(.*)$/;
+const TODO_PATTERN = /\b(TODO|FIXME)\b(?:\([^)]*\))?:?\s*(.*)$/;
 const COMMENT_PATTERN = /(\/\/|\/\*|^\s*\*|#|--|<!--|;)/;
 
 /** Parse a single line; returns the TODO marker and text when it appears inside a comment. */
@@ -48,10 +48,7 @@ export function parseTodoLine(line: string): { tag: string; text: string } | und
 	if (!match) return undefined;
 	const before = line.slice(0, match.index);
 	if (!COMMENT_PATTERN.test(before)) return undefined;
-	const text = match[2]
-		.replace(/^\)\s*:?\s*/, "")
-		.replace(/\s*(\*\/|-->)\s*$/, "")
-		.trim();
+	const text = match[2].replace(/\s*(\*\/|-->)\s*$/, "").trim();
 	return { tag: match[1], text };
 }
 
