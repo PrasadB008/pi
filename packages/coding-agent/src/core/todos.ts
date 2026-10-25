@@ -51,12 +51,7 @@ async function listWithGit(cwd: string): Promise<string[] | undefined> {
 
 async function listWithWalk(cwd: string, dir = ""): Promise<string[]> {
 	const files: string[] = [];
-	let entries;
-	try {
-		entries = await readdir(path.join(cwd, dir), { withFileTypes: true });
-	} catch {
-		return files;
-	}
+	const entries = await readdir(path.join(cwd, dir), { withFileTypes: true }).catch(() => []);
 	for (const entry of entries) {
 		const rel = dir ? `${dir}/${entry.name}` : entry.name;
 		if (entry.isDirectory()) {
