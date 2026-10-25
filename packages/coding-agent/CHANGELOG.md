@@ -4,6 +4,7 @@
 
 ### Added
 
+- Added a built-in `/todos` command that lists TODO comments in the current project, grouped by file, without leaving the terminal. It uses `git ls-files` when available so gitignored files are skipped.
 - Added a Models Configuration reference generated from the `models.json` schema, listing all provider, model, model override, and compatibility fields ([#10790](https://github.com/earendil-works/pi/issues/10790))
 
 ### Changed
