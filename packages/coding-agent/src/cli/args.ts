@@ -91,7 +91,7 @@ export function parseArgs(args: string[]): Args {
 			break;
 		} else if (arg === "--help" || arg === "-h") {
 			result.help = true;
-		} else if (arg === "--version" || arg === "-v") {
+		} else if (arg === "--version" || arg === "--show-version" || arg === "-v") {
 			result.version = true;
 		} else if (arg === "--mode") {
 			const mode = args[i + 1];
@@ -343,7 +343,7 @@ ${chalk.bold("Options:")}
   --offline                      Disable startup network operations (same as PI_OFFLINE=1)
   --                             End option parsing; treat remaining arguments as messages/files
   --help, -h                     Show this help
-  --version, -v                  Show version number
+  --version, --show-version, -v  Show version number
 
 Extensions can register additional flags (e.g., --plan from plan-mode extension).${extensionFlagsText}
 
