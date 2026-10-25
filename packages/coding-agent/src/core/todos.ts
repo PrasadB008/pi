@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
-import { createInterface } from "node:readline";
 import path from "node:path";
+import { createInterface } from "node:readline";
 
 export interface TodoItem {
 	/** Path relative to the searched directory, with forward slashes. */
@@ -14,7 +14,7 @@ export interface TodoItem {
 
 export const TODO_MAX_ITEMS = 200;
 const TODO_PATTERN = "\\b(TODO|FIXME|HACK|XXX)\\b";
-const TODO_LINE_REGEX = /\b(TODO|FIXME|HACK|XXX)\b[\s:()\-]*(.*)$/;
+const TODO_LINE_REGEX = /\b(TODO|FIXME|HACK|XXX)\b(?:\([^)]*\))?[\s:-]*(.*)$/;
 const MAX_TEXT_LENGTH = 160;
 
 /** Extract a TodoItem from one matched source line, or undefined if no marker is present. */
@@ -52,7 +52,10 @@ export function findTodos(rgPath: string, cwd: string, limit = TODO_MAX_ITEMS): 
 		});
 		rl.on("line", (raw) => {
 			if (limitReached || !raw.trim()) return;
-			let event: { type?: string; data?: { path?: { text?: string }; line_number?: number; lines?: { text?: string } } };
+			let event: {
+				type?: string;
+				data?: { path?: { text?: string }; line_number?: number; lines?: { text?: string } };
+			};
 			try {
 				event = JSON.parse(raw);
 			} catch {
