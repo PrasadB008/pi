@@ -186,6 +186,7 @@ import { refreshModelCatalogs } from "./model-catalog-refresh.ts";
 import { getModelSearchText } from "./model-search.ts";
 import { type BlockedStatus, ProgramStatusReporter } from "./program-status-reporter.ts";
 import { shareSession } from "./session-share.ts";
+import { formatSessionStatsLines } from "./stats-format.ts";
 import {
 	getAvailableThemes,
 	getAvailableThemesWithPaths,
@@ -3259,6 +3260,11 @@ export class InteractiveMode {
 			}
 			if (text === "/session") {
 				this.handleSessionCommand();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/stats") {
+				this.handleStatsCommand();
 				this.editor.setText("");
 				return;
 			}
@@ -6786,6 +6792,15 @@ export class InteractiveMode {
 
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new ThemedText(renderInfo, 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleStatsCommand(): void {
+		const lines = formatSessionStatsLines(this.session.getSessionStats());
+		const renderStats = (): string =>
+			`${theme.bold("Session Stats")}\n\n${lines.map((line) => `${theme.fg("dim", `${line.label}:`)} ${line.value}`).join("\n")}`;
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(renderStats, 1, 0));
 		this.ui.requestRender();
 	}
 
