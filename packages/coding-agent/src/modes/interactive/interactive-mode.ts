@@ -114,7 +114,7 @@ import {
 	type UsageEntry,
 } from "../../core/session-manager.ts";
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
-import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
+import { BUILTIN_SLASH_COMMANDS, formatPwdOutput } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
@@ -3259,6 +3259,11 @@ export class InteractiveMode {
 			}
 			if (text === "/session") {
 				this.handleSessionCommand();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/pwd") {
+				this.showStatus(formatPwdOutput(this.sessionManager.getCwd()));
 				this.editor.setText("");
 				return;
 			}
