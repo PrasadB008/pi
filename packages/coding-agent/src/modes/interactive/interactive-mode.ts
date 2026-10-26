@@ -522,6 +522,9 @@ export class InteractiveMode {
 	// Skill commands: command name -> skill file path
 	private skillCommands = new Map<string, string>();
 
+	// Session todos
+	private todos: string[] = [];
+
 	// Agent subscription unsubscribe function
 	private unsubscribe?: () => void;
 	private signalCleanupHandlers: Array<() => void> = [];
@@ -3337,6 +3340,12 @@ export class InteractiveMode {
 			if (text === "/resume") {
 				this.showSessionSelector();
 				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : "";
+				this.editor.setText("");
+				this.handleTodoCommand(todoText);
 				return;
 			}
 			if (text === "/quit") {
@@ -6786,6 +6795,26 @@ export class InteractiveMode {
 
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new ThemedText(renderInfo, 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(todoText: string): void {
+		if (todoText) {
+			// Add a new todo
+			this.todos.push(todoText);
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(new ThemedText(() => `Added todo: ${todoText}`, 1, 0));
+		} else {
+			// List all todos
+			if (this.todos.length === 0) {
+				this.chatContainer.addChild(new Spacer(1));
+				this.chatContainer.addChild(new ThemedText(() => "No todos yet. Use /todo <text> to add one.", 1, 0));
+			} else {
+				this.chatContainer.addChild(new Spacer(1));
+				const todoList = this.todos.map((todo, index) => `${index + 1}. ${todo}`).join("\n");
+				this.chatContainer.addChild(new ThemedText(() => `${theme.bold("Todos")}\n${todoList}`, 1, 0));
+			}
+		}
 		this.ui.requestRender();
 	}
 
