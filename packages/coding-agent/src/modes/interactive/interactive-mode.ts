@@ -131,6 +131,7 @@ import { getCwdRelativePath } from "../../utils/paths.ts";
 import { getPiUserAgent } from "../../utils/pi-user-agent.ts";
 import { killTrackedDetachedChildren } from "../../utils/shell.ts";
 import { loadAllHighlightLanguages } from "../../utils/syntax-highlight.ts";
+import { findTodos } from "../../utils/todos.ts";
 import { ensureTool, type ToolStatus } from "../../utils/tools-manager.ts";
 import { checkForNewPiVersion, type LatestPiRelease } from "../../utils/version-check.ts";
 import { reportBug } from "./bug-report.ts";
@@ -3265,6 +3266,11 @@ export class InteractiveMode {
 			if (text === "/changelog") {
 				this.handleChangelogCommand();
 				this.editor.setText("");
+				return;
+			}
+			if (text === "/todos") {
+				this.editor.setText("");
+				await this.handleTodosCommand();
 				return;
 			}
 			if (text === "/hotkeys") {
@@ -6807,6 +6813,30 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new Markdown(changelogMarkdown, 1, 1, this.getMarkdownThemeWithSettings()));
 		this.chatContainer.addChild(new DynamicBorder());
+		this.ui.requestRender();
+	}
+
+	private async handleTodosCommand(): Promise<void> {
+		const { items, truncated } = await findTodos(this.sessionManager.getCwd());
+
+		const renderTodos = (): string => {
+			if (items.length === 0) return theme.fg("dim", "No TODO or FIXME comments found.");
+			let output = theme.bold(`Outstanding TODOs (${items.length}${truncated ? "+" : ""})`);
+			let currentFile: string | undefined;
+			for (const item of items) {
+				if (item.file !== currentFile) {
+					currentFile = item.file;
+					output += `\n\n${theme.fg("accent", item.file)}`;
+				}
+				const label = item.tag === "FIXME" ? theme.fg("warning", item.tag) : theme.fg("dim", item.tag);
+				output += `\n  ${theme.fg("dim", `${item.line}:`)} ${label} ${item.text}`;
+			}
+			if (truncated) output += `\n\n${theme.fg("dim", "Results truncated.")}`;
+			return output;
+		};
+
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(renderTodos, 1, 0));
 		this.ui.requestRender();
 	}
 
