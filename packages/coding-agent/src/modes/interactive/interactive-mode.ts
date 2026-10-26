@@ -544,6 +544,9 @@ export class InteractiveMode {
 	// Messages queued while compaction is running
 	private compactionQueuedMessages: CompactionQueuedMessage[] = [];
 
+	// Todo items for the session
+	private todoItems: string[] = [];
+
 	// Shutdown state
 	private shutdownRequested = false;
 
@@ -3342,6 +3345,12 @@ export class InteractiveMode {
 			if (text === "/quit") {
 				this.editor.setText("");
 				await this.shutdown();
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : undefined;
+				this.editor.setText("");
+				this.handleTodoCommand(todoText);
 				return;
 			}
 
@@ -6807,6 +6816,29 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new Markdown(changelogMarkdown, 1, 1, this.getMarkdownThemeWithSettings()));
 		this.chatContainer.addChild(new DynamicBorder());
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text?: string): void {
+		if (text) {
+			// Add a new todo item
+			this.todoItems.push(text);
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("accent", `✓ Added: ${text}`), 1, 0));
+		} else {
+			// List all todo items
+			this.chatContainer.addChild(new Spacer(1));
+			if (this.todoItems.length === 0) {
+				this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", "No todo items yet. Use /todo <text> to add one."), 1, 0));
+			} else {
+				this.chatContainer.addChild(new ThemedText(() => theme.bold("Todo Items"), 1, 0));
+				this.chatContainer.addChild(new Spacer(1));
+				for (let i = 0; i < this.todoItems.length; i++) {
+					const item = this.todoItems[i];
+					this.chatContainer.addChild(new ThemedText(() => `${i + 1}. ${item}`, 1, 0));
+				}
+			}
+		}
 		this.ui.requestRender();
 	}
 
