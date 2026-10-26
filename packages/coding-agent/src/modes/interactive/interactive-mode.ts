@@ -115,6 +115,7 @@ import {
 } from "../../core/session-manager.ts";
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
+import { createTodoManager } from "../../core/todo-manager.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
@@ -545,7 +546,7 @@ export class InteractiveMode {
 	private compactionQueuedMessages: CompactionQueuedMessage[] = [];
 
 	// Todo items for the session
-	private todoItems: string[] = [];
+	private todoManager = createTodoManager();
 
 	// Shutdown state
 	private shutdownRequested = false;
@@ -7117,14 +7118,15 @@ export class InteractiveMode {
 	private handleTodoCommand(text: string): void {
 		if (text) {
 			// Add item to todo list
-			this.todoItems.push(text);
+			this.todoManager.add(text);
 			this.showStatus(`Added todo: ${text}`);
 		} else {
 			// List all todo items
-			if (this.todoItems.length === 0) {
+			const items = this.todoManager.list();
+			if (items.length === 0) {
 				this.showStatus("No todo items");
 			} else {
-				const todoList = this.todoItems.map((item, i) => `${i + 1}. ${item}`).join("\n");
+				const todoList = items.map((item, i) => `${i + 1}. ${item}`).join("\n");
 				this.showStatus(`Todo items:\n${todoList}`);
 			}
 		}
