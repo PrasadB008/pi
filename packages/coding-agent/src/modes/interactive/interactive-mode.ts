@@ -493,6 +493,7 @@ export class InteractiveMode {
 	private changelogMarkdown: string | undefined = undefined;
 	private startupNoticesShown = false;
 	private anthropicSubscriptionWarningShown = false;
+	private todoList: string[] = [];
 
 	// Status line tracking (for mutating immediately-sequential status updates)
 	private lastStatusSpacer: Spacer | undefined = undefined;
@@ -3317,6 +3318,12 @@ export class InteractiveMode {
 			if (text === "/reload") {
 				this.editor.setText("");
 				await this.handleReloadCommand();
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : "";
+				this.editor.setText("");
+				this.handleTodoCommand(todoText);
 				return;
 			}
 			if (text === "/debug") {
@@ -6953,6 +6960,24 @@ export class InteractiveMode {
 			this.ui.requestRender();
 		} catch (error: unknown) {
 			await this.handleFatalRuntimeError("Failed to create session", error);
+		}
+	}
+
+	private handleTodoCommand(text: string): void {
+		if (text === "") {
+			// List todos
+			if (this.todoList.length === 0) {
+				this.showInfo("No todos yet. Use /todo <text> to add one.");
+			} else {
+				const todoText = this.todoList
+					.map((item, idx) => `${idx + 1}. ${item}`)
+					.join("\n");
+				this.showInfo(`Todos:\n${todoText}`);
+			}
+		} else {
+			// Add todo
+			this.todoList.push(text);
+			this.showInfo(`Added todo: ${text}`);
 		}
 	}
 
