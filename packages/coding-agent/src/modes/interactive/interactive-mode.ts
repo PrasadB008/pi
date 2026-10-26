@@ -116,6 +116,7 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
+import { TodoManager } from "../../core/todo-manager.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
@@ -548,7 +549,7 @@ export class InteractiveMode {
 	private shutdownRequested = false;
 
 	// Session todos
-	private todos: string[] = [];
+	private todoManager = new TodoManager();
 
 	/** Reports working, blocked, done, and error states to terminals that support OSC 7501. */
 	private readonly programStatus = new ProgramStatusReporter(
@@ -7004,13 +7005,14 @@ export class InteractiveMode {
 
 		if (todoText) {
 			// Add a new todo
-			this.todos.push(todoText);
+			this.todoManager.addTodo(todoText);
 			this.chatContainer.addChild(
 				new ThemedText(() => `${theme.fg("accent", "✓ Added todo")}: ${todoText}`, 1, 1),
 			);
 		} else {
 			// List all todos
-			if (this.todos.length === 0) {
+			const todos = this.todoManager.getTodos();
+			if (todos.length === 0) {
 				this.chatContainer.addChild(
 					new ThemedText(() => theme.fg("muted", "No todos yet. Use /todo <text> to add one."), 1, 1),
 				);
@@ -7018,7 +7020,7 @@ export class InteractiveMode {
 				this.chatContainer.addChild(
 					new ThemedText(() => theme.fg("accent", "Todos:"), 1, 1),
 				);
-				this.todos.forEach((todo, idx) => {
+				todos.forEach((todo, idx) => {
 					this.chatContainer.addChild(
 						new ThemedText(() => `  ${idx + 1}. ${todo}`, 1, 1),
 					);
