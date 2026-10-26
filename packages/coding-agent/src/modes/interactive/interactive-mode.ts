@@ -128,6 +128,7 @@ import { extensionForImageMimeType, readClipboardImage } from "../../utils/clipb
 import { parseGitUrl } from "../../utils/git.ts";
 import { ensurePngTranscoder } from "../../utils/image-convert.ts";
 import { getCwdRelativePath } from "../../utils/paths.ts";
+import { TodoList } from "./todo.ts";
 import { getPiUserAgent } from "../../utils/pi-user-agent.ts";
 import { killTrackedDetachedChildren } from "../../utils/shell.ts";
 import { loadAllHighlightLanguages } from "../../utils/syntax-highlight.ts";
@@ -546,6 +547,10 @@ export class InteractiveMode {
 
 	// Shutdown state
 	private shutdownRequested = false;
+
+	// Todo list for the session
+	private todoList = new TodoList();
+
 
 	/** Reports working, blocked, done, and error states to terminals that support OSC 7501. */
 	private readonly programStatus = new ProgramStatusReporter(
@@ -3317,6 +3322,19 @@ export class InteractiveMode {
 			if (text === "/reload") {
 				this.editor.setText("");
 				await this.handleReloadCommand();
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				if (text === "/todo") {
+					this.showInfo(this.todoList.format());
+				} else {
+					const todoText = text.slice(6).trim();
+					if (todoText) {
+						this.todoList.add(todoText);
+						this.showInfo(`Added: ${todoText}`);
+					}
+				}
+				this.editor.setText("");
 				return;
 			}
 			if (text === "/debug") {
