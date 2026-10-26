@@ -110,6 +110,8 @@ npm run check         # Lint, format, and type check
 ./pi-test.sh         # Run pi from sources (can be run from any directory)
 ```
 
+To run the tests, run `./test.sh` from the repo root. To run a single test file, run `node "$(git rev-parse --show-toplevel)/node_modules/vitest/dist/cli.js" --run test/specific.test.ts` from the package root.
+
 ### Using local packages outside the monorepo
 
 Build every public package into one coherent local artifact set:
