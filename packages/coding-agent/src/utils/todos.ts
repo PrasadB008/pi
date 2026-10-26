@@ -41,7 +41,7 @@ const DEFAULT_MAX_ITEMS = 500;
 const DEFAULT_MAX_FILE_SIZE = 512 * 1024;
 
 // Marker must follow a comment opener (//, #, /*, *, --, <!--, ;) so prose and string literals are mostly ignored.
-const TODO_PATTERN = /(?:\/\/|\/\*|^\s*\*|#|--|<!--|;)\s*(TODO|FIXME)\b[:(\s-]*(.*)$/;
+const TODO_PATTERN = /(?:\/\/|\/\*|^\s*\*|#|--|<!--|;)\s*(TODO|FIXME)\b(?:\([^)]*\))?[:\s-]*(.*)$/;
 
 function looksBinary(buffer: Buffer): boolean {
 	return buffer.subarray(0, 8000).includes(0);
