@@ -479,6 +479,9 @@ export class AgentSession {
 	private _toolPromptSnippets: Map<string, string> = new Map();
 	private _toolPromptGuidelines: Map<string, string[]> = new Map();
 
+	// Todo list for the session
+	private _todos: string[] = [];
+
 	private _baseSystemPromptOptions!: NormalizedBuildSystemPromptOptions;
 	/** Prompt options after before_agent_start mutations for the active run. */
 	private _runSystemPromptOptions?: NormalizedBuildSystemPromptOptions;
@@ -2062,7 +2065,14 @@ export class AgentSession {
 		}
 		const expandPromptTemplates = options?.expandPromptTemplates ?? true;
 		const preflightResult = options?.preflightResult;
-		// Handle extension commands first (execute immediately, even during streaming)
+		// Handle built-in commands first
+		if (expandPromptTemplates && text.startsWith("/")) {
+			if (this._tryExecuteBuiltinCommand(text)) {
+				preflightResult?.("handled");
+				return;
+			}
+		}
+		// Handle extension commands (execute immediately, even during streaming)
 		// Extension commands manage their own LLM interaction via pi.sendMessage()
 		if (expandPromptTemplates && text.startsWith("/")) {
 			const handled = await this._tryExecuteExtensionCommand(text);
@@ -2138,6 +2148,44 @@ export class AgentSession {
 		await this._startRun({ messageType: "user", prompt: expandedText, images: currentImages }, () =>
 			preflightResult?.("started"),
 		);
+	}
+
+	/**
+	 * Try to execute a built-in command. Returns true if command was found and executed.
+	 */
+	private _tryExecuteBuiltinCommand(text: string): boolean {
+		// Parse command name and args
+		const spaceIndex = text.indexOf(" ");
+		const commandName = spaceIndex === -1 ? text.slice(1) : text.slice(1, spaceIndex);
+		const args = spaceIndex === -1 ? "" : text.slice(spaceIndex + 1);
+
+		if (commandName === "todo") {
+			if (args.trim()) {
+				// Add todo item
+				this._todos.push(args.trim());
+				this._extensionRunner.emitMessage({
+					role: "assistant",
+					content: `Added todo: ${args.trim()}`,
+				});
+			} else {
+				// List todos
+				if (this._todos.length === 0) {
+					this._extensionRunner.emitMessage({
+						role: "assistant",
+						content: "No todos yet.",
+					});
+				} else {
+					const todoList = this._todos.map((todo, i) => `${i + 1}. ${todo}`).join("\n");
+					this._extensionRunner.emitMessage({
+						role: "assistant",
+						content: `Todos:\n${todoList}`,
+					});
+				}
+			}
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
