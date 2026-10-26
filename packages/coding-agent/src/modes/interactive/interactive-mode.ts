@@ -202,6 +202,7 @@ import {
 } from "./theme/theme.ts";
 import { InteractiveThemeController } from "./theme/theme-controller.ts";
 import { createInteractiveTui, createInteractiveTuiReference } from "./tui-renderer.ts";
+import { TodoList } from "./todo.ts";
 
 export { createInteractiveTui, createInteractiveTuiReference } from "./tui-renderer.ts";
 
@@ -546,6 +547,9 @@ export class InteractiveMode {
 
 	// Shutdown state
 	private shutdownRequested = false;
+
+	// Todo list for the session
+	private todoList = new TodoList();
 
 	/** Reports working, blocked, done, and error states to terminals that support OSC 7501. */
 	private readonly programStatus = new ProgramStatusReporter(
@@ -3336,6 +3340,12 @@ export class InteractiveMode {
 			}
 			if (text === "/resume") {
 				this.showSessionSelector();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : undefined;
+				this.handleTodoCommand(todoText);
 				this.editor.setText("");
 				return;
 			}
@@ -6680,6 +6690,16 @@ export class InteractiveMode {
 			}
 		} catch (error) {
 			this.showError(error instanceof Error ? error.message : String(error));
+		}
+	}
+
+	private handleTodoCommand(text: string | undefined): void {
+		if (text) {
+			this.todoList.add(text);
+			this.showStatus(`Added todo: ${text}`);
+		} else {
+			const todos = this.todoList.format();
+			this.showStatus(todos);
 		}
 	}
 
