@@ -547,6 +547,9 @@ export class InteractiveMode {
 	// Shutdown state
 	private shutdownRequested = false;
 
+	// Session todos
+	private todos: string[] = [];
+
 	/** Reports working, blocked, done, and error states to terminals that support OSC 7501. */
 	private readonly programStatus = new ProgramStatusReporter(
 		() => this.ui.terminal,
@@ -3336,6 +3339,11 @@ export class InteractiveMode {
 			}
 			if (text === "/resume") {
 				this.showSessionSelector();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6986,6 +6994,38 @@ export class InteractiveMode {
 		this.chatContainer.addChild(
 			new ThemedText(() => `${theme.fg("accent", "✓ Debug log written")}\n${theme.fg("muted", debugLogPath)}`, 1, 1),
 		);
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : "";
+
+		this.chatContainer.addChild(new Spacer(1));
+
+		if (todoText) {
+			// Add a new todo
+			this.todos.push(todoText);
+			this.chatContainer.addChild(
+				new ThemedText(() => `${theme.fg("accent", "✓ Added todo")}: ${todoText}`, 1, 1),
+			);
+		} else {
+			// List all todos
+			if (this.todos.length === 0) {
+				this.chatContainer.addChild(
+					new ThemedText(() => theme.fg("muted", "No todos yet. Use /todo <text> to add one."), 1, 1),
+				);
+			} else {
+				this.chatContainer.addChild(
+					new ThemedText(() => theme.fg("accent", "Todos:"), 1, 1),
+				);
+				this.todos.forEach((todo, idx) => {
+					this.chatContainer.addChild(
+						new ThemedText(() => `  ${idx + 1}. ${todo}`, 1, 1),
+					);
+				});
+			}
+		}
+
 		this.ui.requestRender();
 	}
 
