@@ -31,7 +31,7 @@ const SKIPPED_DIRS = new Set([".git", "node_modules", "dist", "build", "coverage
 const SKIPPED_FILES = new Set(["package-lock.json", "yarn.lock", "pnpm-lock.yaml", "bun.lock", "bun.lockb"]);
 
 // A tag only counts when it follows a comment marker, so string literals such as "TODO" are ignored.
-const TODO_PATTERN = /(?:\/\/|\/\*|\*|#|--|<!--|;|%)\s*(TODO|FIXME)\b[\s:(-]*(.*)$/;
+const TODO_PATTERN = /(?:\/\/|\/\*|\*|#|--|<!--|;|%)\s*(TODO|FIXME)\b(?:\([^)]*\))?[\s:-]*(.*)$/;
 
 /** Extract a TODO/FIXME comment from one line of text. */
 export function parseTodoLine(line: string): { tag: "TODO" | "FIXME"; text: string } | undefined {
