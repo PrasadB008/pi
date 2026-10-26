@@ -469,6 +469,9 @@ export class AgentSession {
 	private _modelRuntime: ModelRuntime;
 	private _cacheWarmer?: Pick<CacheWarmer, "cancel" | "status" | "onAgentSettled" | "onModeChanged" | "onWarmed">;
 
+	// Todo list for the session
+	private _todos: string[] = [];
+
 	// Tool registry for extension getTools/setTools
 	private _toolRegistry: Map<string, AgentTool> = new Map();
 	/** Created on the first `ctx.executeTool()` call. */
@@ -2148,6 +2151,53 @@ export class AgentSession {
 		const spaceIndex = text.indexOf(" ");
 		const commandName = spaceIndex === -1 ? text.slice(1) : text.slice(1, spaceIndex);
 		const args = spaceIndex === -1 ? "" : text.slice(spaceIndex + 1);
+
+		// Handle built-in /todo command
+		if (commandName === "todo") {
+			if (args.trim()) {
+				// Add todo item
+				this._todos.push(args.trim());
+				this._emit({
+					type: "message_start",
+					role: "assistant",
+					source: "builtin",
+				});
+				this._emit({
+					type: "message_update",
+					delta: `Added todo: ${args.trim()}`,
+				});
+				this._emit({
+					type: "message_end",
+					role: "assistant",
+					source: "builtin",
+				});
+			} else {
+				// List todos
+				this._emit({
+					type: "message_start",
+					role: "assistant",
+					source: "builtin",
+				});
+				if (this._todos.length === 0) {
+					this._emit({
+						type: "message_update",
+						delta: "No todos yet.",
+					});
+				} else {
+					const todoList = this._todos.map((todo, i) => `${i + 1}. ${todo}`).join("\n");
+					this._emit({
+						type: "message_update",
+						delta: `Todos:\n${todoList}`,
+					});
+				}
+				this._emit({
+					type: "message_end",
+					role: "assistant",
+					source: "builtin",
+				});
+			}
+			return true;
+		}
 
 		const command = this._extensionRunner.getCommand(commandName);
 		if (!command) return false;
