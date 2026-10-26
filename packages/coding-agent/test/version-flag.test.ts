@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
-import { ENV_AGENT_DIR } from "../src/config.ts";
+import { ENV_AGENT_DIR, getPackageJsonPath, VERSION } from "../src/config.ts";
 
 const cliPath = resolve(__dirname, "../src/cli.ts");
 const packageJsonPath = resolve(__dirname, "../package.json");
@@ -41,6 +41,13 @@ async function runCli(args: string[]): Promise<{ code: number | null; stdout: st
 		child.on("close", (code) => resolvePromise({ code, stdout }));
 	});
 }
+
+describe("VERSION", () => {
+	it("matches the version in package.json", () => {
+		const pkgVersion = (JSON.parse(readFileSync(getPackageJsonPath(), "utf8")) as { version: string }).version;
+		expect(VERSION).toBe(pkgVersion);
+	});
+});
 
 describe("version flag", () => {
 	const expectedVersion = (JSON.parse(readFileSync(packageJsonPath, "utf8")) as { version: string }).version;
