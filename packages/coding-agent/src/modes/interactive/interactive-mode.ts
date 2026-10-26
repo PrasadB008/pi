@@ -3272,6 +3272,12 @@ export class InteractiveMode {
 				this.editor.setText("");
 				return;
 			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : undefined;
+				this.editor.setText("");
+				this.handleTodoCommand(todoText);
+				return;
+			}
 			if (text === "/fork") {
 				this.showUserMessageSelector();
 				this.editor.setText("");
@@ -6938,6 +6944,37 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new Markdown(hotkeys.trim(), 1, 1, this.getMarkdownThemeWithSettings()));
 		this.chatContainer.addChild(new DynamicBorder());
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text?: string): void {
+		if (text) {
+			// Add item to todo list
+			if (!this.session.todoItems) {
+				this.session.todoItems = [];
+			}
+			this.session.todoItems.push(text);
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(new DynamicBorder());
+			this.chatContainer.addChild(new ThemedText(() => theme.bold(theme.fg("accent", "Todo")), 1, 0));
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(new ThemedText(() => `Added: ${text}`, 1, 1));
+			this.chatContainer.addChild(new DynamicBorder());
+		} else {
+			// List all todo items
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(new DynamicBorder());
+			this.chatContainer.addChild(new ThemedText(() => theme.bold(theme.fg("accent", "Todo List")), 1, 0));
+			this.chatContainer.addChild(new Spacer(1));
+			if (!this.session.todoItems || this.session.todoItems.length === 0) {
+				this.chatContainer.addChild(new ThemedText(() => "No items", 1, 1));
+			} else {
+				for (let i = 0; i < this.session.todoItems.length; i++) {
+					this.chatContainer.addChild(new ThemedText(() => `${i + 1}. ${this.session.todoItems![i]}`, 1, 1));
+				}
+			}
+			this.chatContainer.addChild(new DynamicBorder());
+		}
 		this.ui.requestRender();
 	}
 

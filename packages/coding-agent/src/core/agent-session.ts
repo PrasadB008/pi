@@ -448,6 +448,9 @@ export class AgentSession {
 	private _pendingToolNames = new Set<string>();
 	private _usesDefaultTools: boolean;
 	private _defaultToolModifiers: string[];
+	/** Todo items for the session */
+	todoItems: string[] = [];
+
 	/** Matches the `--tools` entries: tool names or patterns. */
 	private _allowedTools?: (name: string) => boolean;
 	/**
