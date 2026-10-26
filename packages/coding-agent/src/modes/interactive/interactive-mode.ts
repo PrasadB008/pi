@@ -186,6 +186,7 @@ import { refreshModelCatalogs } from "./model-catalog-refresh.ts";
 import { getModelSearchText } from "./model-search.ts";
 import { type BlockedStatus, ProgramStatusReporter } from "./program-status-reporter.ts";
 import { shareSession } from "./session-share.ts";
+import { TodoList } from "./todo.ts";
 import {
 	getAvailableThemes,
 	getAvailableThemesWithPaths,
@@ -543,6 +544,9 @@ export class InteractiveMode {
 
 	// Messages queued while compaction is running
 	private compactionQueuedMessages: CompactionQueuedMessage[] = [];
+
+	// Todo list for the session
+	private todoList = new TodoList();
 
 	// Shutdown state
 	private shutdownRequested = false;
@@ -3342,6 +3346,11 @@ export class InteractiveMode {
 			if (text === "/quit") {
 				this.editor.setText("");
 				await this.shutdown();
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.editor.setText("");
+				await this.handleTodoCommand(text);
 				return;
 			}
 
@@ -7000,6 +7009,19 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new EarendilAnnouncementComponent());
 		this.ui.requestRender();
+	}
+
+	private async handleTodoCommand(text: string): Promise<void> {
+		const args = text.slice(6).trim(); // Remove "/todo " prefix
+		if (args) {
+			// Add todo item
+			this.todoList.add(args);
+			this.showInfo(`Added: ${args}`);
+		} else {
+			// List todo items
+			const formatted = this.todoList.format();
+			this.showInfo(formatted);
+		}
 	}
 
 	private async handleBashCommand(command: string, excludeFromContext = false): Promise<void> {
