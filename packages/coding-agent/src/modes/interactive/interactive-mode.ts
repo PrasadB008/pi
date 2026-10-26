@@ -116,6 +116,7 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
+import { TodoList } from "./todo.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
@@ -487,6 +488,8 @@ export class InteractiveMode {
 	private readonly defaultWorkingMessage = "Working";
 	private readonly defaultHiddenThinkingLabel = "Thinking...";
 	private hiddenThinkingLabel = this.defaultHiddenThinkingLabel;
+
+	private readonly todoList = new TodoList();
 
 	private lastSigintTime = 0;
 	private lastEscapeTime = 0;
@@ -3342,6 +3345,18 @@ export class InteractiveMode {
 			if (text === "/quit") {
 				this.editor.setText("");
 				await this.shutdown();
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : "";
+				if (todoText) {
+					this.todoList.add(todoText);
+					this.ui.showNotification(`Added: ${todoText}`);
+				} else {
+					const todos = this.todoList.format();
+					this.ui.showNotification(todos);
+				}
+				this.editor.setText("");
 				return;
 			}
 
