@@ -101,7 +101,9 @@ export function formatTodos(result: TodoScanResult): string {
 		lines.push(`  ${item.line}: ${item.tag}${text}`);
 	}
 	const count = result.items.length;
-	const summary = result.truncated ? `Showing first ${count} items (more exist).` : `${count} item${count === 1 ? "" : "s"}.`;
+	const summary = result.truncated
+		? `Showing first ${count} items (more exist).`
+		: `${count} item${count === 1 ? "" : "s"}.`;
 	lines.push("", summary);
 	return lines.join("\n");
 }

@@ -20,7 +20,9 @@ describe("scanTodos", () => {
 		fs.mkdirSync(path.join(root, "node_modules"));
 		fs.writeFileSync(
 			path.join(root, "src", "a.ts"),
-			["const x = 1;", "// TODO: handle errors", "/* FIXME(bob): leak */", "const todo = 'not a comment';"].join("\n"),
+			["const x = 1;", "// TODO: handle errors", "/* FIXME(bob): leak */", "const todo = 'not a comment';"].join(
+				"\n",
+			),
 		);
 		fs.writeFileSync(path.join(root, "script.py"), "# todo lowercase works\n");
 		fs.writeFileSync(path.join(root, "node_modules", "dep.js"), "// TODO: ignored\n");

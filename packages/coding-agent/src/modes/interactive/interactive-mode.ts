@@ -201,6 +201,7 @@ import {
 	theme,
 } from "./theme/theme.ts";
 import { InteractiveThemeController } from "./theme/theme-controller.ts";
+import { formatTodos, scanTodos } from "./todos.ts";
 import { createInteractiveTui, createInteractiveTuiReference } from "./tui-renderer.ts";
 
 export { createInteractiveTui, createInteractiveTuiReference } from "./tui-renderer.ts";
@@ -3312,6 +3313,11 @@ export class InteractiveMode {
 				const customInstructions = text.startsWith("/compact ") ? text.slice(9).trim() : undefined;
 				this.editor.setText("");
 				await this.handleCompactCommand(customInstructions);
+				return;
+			}
+			if (text === "/todos") {
+				this.editor.setText("");
+				this.handleTodosCommand();
 				return;
 			}
 			if (text === "/reload") {
@@ -6806,6 +6812,18 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new ThemedText(() => theme.bold(theme.fg("accent", "What's New")), 1, 0));
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new Markdown(changelogMarkdown, 1, 1, this.getMarkdownThemeWithSettings()));
+		this.chatContainer.addChild(new DynamicBorder());
+		this.ui.requestRender();
+	}
+
+	private handleTodosCommand(): void {
+		const todosText = formatTodos(scanTodos(this.sessionManager.getCwd()));
+
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new DynamicBorder());
+		this.chatContainer.addChild(new ThemedText(() => theme.bold(theme.fg("accent", "TODOs")), 1, 0));
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new Text(todosText, 1, 0));
 		this.chatContainer.addChild(new DynamicBorder());
 		this.ui.requestRender();
 	}
