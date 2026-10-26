@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -52,7 +52,10 @@ describe("VERSION", () => {
 describe("version flag", () => {
 	const expectedVersion = (JSON.parse(readFileSync(packageJsonPath, "utf8")) as { version: string }).version;
 
-	it.each(["--version", "-v"])("%s prints the package version and exits 0", async (flag) => {
+	// The CLI imports generated model data (npm run hydrate-model-data in packages/ai); skip when it is absent.
+	const hasGeneratedData = existsSync(resolve(__dirname, "../../ai/src/providers/data/.manifest.json"));
+
+	it.skipIf(!hasGeneratedData).each(["--version", "-v"])("%s prints the package version and exits 0", async (flag) => {
 		const result = await runCli([flag]);
 		expect(result.code).toBe(0);
 		expect(result.stdout.trim()).toBe(expectedVersion);
