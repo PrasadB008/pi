@@ -469,6 +469,9 @@ export class AgentSession {
 	private _modelRuntime: ModelRuntime;
 	private _cacheWarmer?: Pick<CacheWarmer, "cancel" | "status" | "onAgentSettled" | "onModeChanged" | "onWarmed">;
 
+	// Todo list for the session
+	private _todoItems: string[] = [];
+
 	// Tool registry for extension getTools/setTools
 	private _toolRegistry: Map<string, AgentTool> = new Map();
 	/** Created on the first `ctx.executeTool()` call. */
@@ -1671,6 +1674,16 @@ export class AgentSession {
 	/** Update scoped models for cycling */
 	setScopedModels(scopedModels: Array<{ model: Model<any>; thinkingLevel?: ThinkingLevel }>): void {
 		this._scopedModels = scopedModels;
+	}
+
+	/** Get todo items for this session */
+	getTodoItems(): ReadonlyArray<string> {
+		return this._todoItems;
+	}
+
+	/** Add a todo item to the session */
+	addTodoItem(item: string): void {
+		this._todoItems.push(item);
 	}
 
 	/** File-based prompt templates */
