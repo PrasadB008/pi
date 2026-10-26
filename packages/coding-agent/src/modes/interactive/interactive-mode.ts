@@ -522,6 +522,9 @@ export class InteractiveMode {
 	// Skill commands: command name -> skill file path
 	private skillCommands = new Map<string, string>();
 
+	// Todo list for the session
+	private todoItems: string[] = [];
+
 	// Agent subscription unsubscribe function
 	private unsubscribe?: () => void;
 	private signalCleanupHandlers: Array<() => void> = [];
@@ -3336,6 +3339,11 @@ export class InteractiveMode {
 			}
 			if (text === "/resume") {
 				this.showSessionSelector();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6532,6 +6540,25 @@ export class InteractiveMode {
 				dismissReloadBox(previousEditor as Component);
 			}
 			this.showError(`Reload failed: ${error instanceof Error ? error.message : String(error)}`);
+		}
+	}
+
+	private handleTodoCommand(text: string): void {
+		if (text === "/todo") {
+			// List all todo items
+			if (this.todoItems.length === 0) {
+				this.showStatus("No todo items");
+			} else {
+				const todoList = this.todoItems.map((item, index) => `${index + 1}. ${item}`).join("\n");
+				this.showStatus(`Todo items:\n${todoList}`);
+			}
+		} else if (text.startsWith("/todo ")) {
+			// Add a new todo item
+			const item = text.slice(6).trim();
+			if (item) {
+				this.todoItems.push(item);
+				this.showStatus(`Added: ${item}`);
+			}
 		}
 	}
 
