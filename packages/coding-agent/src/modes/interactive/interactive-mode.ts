@@ -125,6 +125,7 @@ import { addMcpServerConfig, loadMcpConfig } from "../../extensions/mcp/config.t
 import { getChangelogPath, getNewEntries, normalizeChangelogLinks, parseChangelog } from "../../utils/changelog.ts";
 import { copyToClipboard, readClipboardFilePaths, readClipboardText } from "../../utils/clipboard.ts";
 import { extensionForImageMimeType, readClipboardImage } from "../../utils/clipboard-image.ts";
+import { TodoManager } from "../../utils/todo-manager.ts";
 import { parseGitUrl } from "../../utils/git.ts";
 import { ensurePngTranscoder } from "../../utils/image-convert.ts";
 import { getCwdRelativePath } from "../../utils/paths.ts";
@@ -493,7 +494,7 @@ export class InteractiveMode {
 	private changelogMarkdown: string | undefined = undefined;
 	private startupNoticesShown = false;
 	private anthropicSubscriptionWarningShown = false;
-	private todoList: string[] = [];
+	private todoManager = new TodoManager();
 
 	// Status line tracking (for mutating immediately-sequential status updates)
 	private lastStatusSpacer: Spacer | undefined = undefined;
@@ -6966,17 +6967,10 @@ export class InteractiveMode {
 	private handleTodoCommand(text: string): void {
 		if (text === "") {
 			// List todos
-			if (this.todoList.length === 0) {
-				this.showInfo("No todos yet. Use /todo <text> to add one.");
-			} else {
-				const todoText = this.todoList
-					.map((item, idx) => `${idx + 1}. ${item}`)
-					.join("\n");
-				this.showInfo(`Todos:\n${todoText}`);
-			}
+			this.showInfo(this.todoManager.formatTodos());
 		} else {
 			// Add todo
-			this.todoList.push(text);
+			this.todoManager.addTodo(text);
 			this.showInfo(`Added todo: ${text}`);
 		}
 	}
