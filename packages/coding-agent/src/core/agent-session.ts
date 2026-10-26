@@ -479,6 +479,9 @@ export class AgentSession {
 	private _toolPromptSnippets: Map<string, string> = new Map();
 	private _toolPromptGuidelines: Map<string, string[]> = new Map();
 
+	/** Session todo list items. */
+	private _todoItems: string[] = [];
+
 	private _baseSystemPromptOptions!: NormalizedBuildSystemPromptOptions;
 	/** Prompt options after before_agent_start mutations for the active run. */
 	private _runSystemPromptOptions?: NormalizedBuildSystemPromptOptions;
@@ -1676,6 +1679,14 @@ export class AgentSession {
 	/** File-based prompt templates */
 	get promptTemplates(): ReadonlyArray<PromptTemplate> {
 		return this._resourceLoader.getPrompts().prompts;
+	}
+
+	getTodoItems(): ReadonlyArray<string> {
+		return this._todoItems;
+	}
+
+	addTodoItem(text: string): void {
+		this._todoItems.push(text);
 	}
 
 	private _normalizePromptSnippet(text: string | undefined): string | undefined {

@@ -3339,6 +3339,12 @@ export class InteractiveMode {
 				this.editor.setText("");
 				return;
 			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : undefined;
+				this.editor.setText("");
+				this.handleTodoCommand(todoText);
+				return;
+			}
 			if (text === "/quit") {
 				this.editor.setText("");
 				await this.shutdown();
@@ -6705,6 +6711,28 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string | undefined): void {
+		if (text) {
+			// Add a new todo item
+			this.session.addTodoItem(text);
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Todo added: ${text}`), 1, 0));
+		} else {
+			// List all todo items
+			const items = this.session.getTodoItems();
+			this.chatContainer.addChild(new Spacer(1));
+			if (items.length === 0) {
+				this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", "No todo items"), 1, 0));
+			} else {
+				this.chatContainer.addChild(new ThemedText(() => theme.bold("Todo Items"), 1, 0));
+				items.forEach((item, index) => {
+					this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `${index + 1}. ${item}`), 1, 0));
+				});
+			}
+		}
 		this.ui.requestRender();
 	}
 
