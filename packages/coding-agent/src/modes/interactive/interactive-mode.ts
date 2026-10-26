@@ -547,6 +547,9 @@ export class InteractiveMode {
 	// Shutdown state
 	private shutdownRequested = false;
 
+	// Todo list for the session
+	private todoItems: string[] = [];
+
 	/** Reports working, blocked, done, and error states to terminals that support OSC 7501. */
 	private readonly programStatus = new ProgramStatusReporter(
 		() => this.ui.terminal,
@@ -3336,6 +3339,22 @@ export class InteractiveMode {
 			}
 			if (text === "/resume") {
 				this.showSessionSelector();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : "";
+				if (todoText) {
+					this.todoItems.push(todoText);
+					this.showInfo(`Added todo: ${todoText}`);
+				} else {
+					if (this.todoItems.length === 0) {
+						this.showInfo("No todo items yet.");
+					} else {
+						const todoList = this.todoItems.map((item, i) => `${i + 1}. ${item}`).join("\n");
+						this.showInfo(`Todo items:\n${todoList}`);
+					}
+				}
 				this.editor.setText("");
 				return;
 			}
