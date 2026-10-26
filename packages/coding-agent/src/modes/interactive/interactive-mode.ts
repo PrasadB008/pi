@@ -547,6 +547,9 @@ export class InteractiveMode {
 	// Shutdown state
 	private shutdownRequested = false;
 
+	// Todo list for the session
+	private todos: string[] = [];
+
 	/** Reports working, blocked, done, and error states to terminals that support OSC 7501. */
 	private readonly programStatus = new ProgramStatusReporter(
 		() => this.ui.terminal,
@@ -3317,6 +3320,12 @@ export class InteractiveMode {
 			if (text === "/reload") {
 				this.editor.setText("");
 				await this.handleReloadCommand();
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : undefined;
+				this.editor.setText("");
+				await this.handleTodoCommand(todoText);
 				return;
 			}
 			if (text === "/debug") {
@@ -6532,6 +6541,22 @@ export class InteractiveMode {
 				dismissReloadBox(previousEditor as Component);
 			}
 			this.showError(`Reload failed: ${error instanceof Error ? error.message : String(error)}`);
+		}
+	}
+
+	private async handleTodoCommand(todoText: string | undefined): Promise<void> {
+		if (todoText === undefined) {
+			// List todos
+			if (this.todos.length === 0) {
+				this.showStatus("No todos yet. Use /todo <text> to add one.");
+			} else {
+				const todoList = this.todos.map((todo, index) => `${index + 1}. ${todo}`).join("\n");
+				this.showStatus(`Todos:\n${todoList}`);
+			}
+		} else {
+			// Add todo
+			this.todos.push(todoText);
+			this.showStatus(`Added todo: ${todoText}`);
 		}
 	}
 
