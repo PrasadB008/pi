@@ -116,6 +116,7 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
+import { scanTodos } from "../../core/todos.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
@@ -3265,6 +3266,11 @@ export class InteractiveMode {
 			if (text === "/changelog") {
 				this.handleChangelogCommand();
 				this.editor.setText("");
+				return;
+			}
+			if (text === "/todos") {
+				this.editor.setText("");
+				await this.handleTodosCommand();
 				return;
 			}
 			if (text === "/hotkeys") {
@@ -6806,6 +6812,36 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new ThemedText(() => theme.bold(theme.fg("accent", "What's New")), 1, 0));
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new Markdown(changelogMarkdown, 1, 1, this.getMarkdownThemeWithSettings()));
+		this.chatContainer.addChild(new DynamicBorder());
+		this.ui.requestRender();
+	}
+
+	private async handleTodosCommand(): Promise<void> {
+		const { items, truncated } = await scanTodos(this.sessionManager.getCwd());
+
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new DynamicBorder());
+		const title = items.length === 0 ? "TODOs" : `TODOs (${items.length}${truncated ? "+" : ""})`;
+		this.chatContainer.addChild(new ThemedText(() => theme.bold(theme.fg("accent", title)), 1, 0));
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(
+			new ThemedText(() => {
+				if (items.length === 0) return theme.fg("dim", "No TODO, FIXME, XXX or HACK comments found.");
+				const lines: string[] = [];
+				let currentFile: string | undefined;
+				for (const item of items) {
+					if (item.file !== currentFile) {
+						if (currentFile !== undefined) lines.push("");
+						lines.push(theme.fg("accent", item.file));
+						currentFile = item.file;
+					}
+					const location = theme.fg("dim", `  ${item.line}:`);
+					lines.push(`${location} ${theme.bold(item.tag)} ${item.text}`.trimEnd());
+				}
+				if (truncated) lines.push("", theme.fg("dim", `Showing the first ${items.length} matches.`));
+				return lines.join("\n");
+			}, 1, 0),
+		);
 		this.chatContainer.addChild(new DynamicBorder());
 		this.ui.requestRender();
 	}
