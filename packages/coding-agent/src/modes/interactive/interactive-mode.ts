@@ -116,6 +116,7 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
+import { TodoList } from "../../core/todo-list.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
@@ -548,7 +549,7 @@ export class InteractiveMode {
 	private shutdownRequested = false;
 
 	// Todo list for the session
-	private todoItems: string[] = [];
+	private todoList = new TodoList();
 
 	/** Reports working, blocked, done, and error states to terminals that support OSC 7501. */
 	private readonly programStatus = new ProgramStatusReporter(
@@ -6801,20 +6802,21 @@ export class InteractiveMode {
 	private handleTodoCommand(text: string): void {
 		if (text === "") {
 			// List todos
-			if (this.todoItems.length === 0) {
+			const items = this.todoList.getItems();
+			if (items.length === 0) {
 				this.chatContainer.addChild(new Spacer(1));
 				this.chatContainer.addChild(new ThemedText(() => `${theme.fg("dim", "No todos yet. Use /todo <text> to add one.")}`, 1, 0));
 			} else {
 				this.chatContainer.addChild(new Spacer(1));
 				this.chatContainer.addChild(new ThemedText(() => `${theme.bold("Todo List")}`, 1, 0));
-				for (let i = 0; i < this.todoItems.length; i++) {
-					const item = this.todoItems[i];
+				for (let i = 0; i < items.length; i++) {
+					const item = items[i];
 					this.chatContainer.addChild(new ThemedText(() => `${theme.fg("dim", `${i + 1}.`)} ${item}`, 1, 0));
 				}
 			}
 		} else {
 			// Add todo
-			this.todoItems.push(text);
+			this.todoList.add(text);
 			this.chatContainer.addChild(new Spacer(1));
 			this.chatContainer.addChild(new ThemedText(() => `${theme.fg("dim", `Added: ${text}`)}`, 1, 0));
 		}
