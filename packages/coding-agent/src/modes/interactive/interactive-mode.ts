@@ -498,6 +498,9 @@ export class InteractiveMode {
 	private lastStatusSpacer: Spacer | undefined = undefined;
 	private lastStatusText: ThemedText | undefined = undefined;
 	private lastStatusMessage = "";
+
+	// Todo list for the session
+	private todos: string[] = [];
 	private managedToolStatusStarted = false;
 
 	// Streaming message tracking
@@ -3337,6 +3340,12 @@ export class InteractiveMode {
 			if (text === "/resume") {
 				this.showSessionSelector();
 				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : "";
+				this.editor.setText("");
+				this.handleTodoCommand(todoText);
 				return;
 			}
 			if (text === "/quit") {
@@ -6705,6 +6714,30 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		if (!text) {
+			// List todos
+			if (this.todos.length === 0) {
+				this.chatContainer.addChild(new Spacer(1));
+				this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", "No todos yet. Use /todo <text> to add one."), 1, 0));
+			} else {
+				this.chatContainer.addChild(new Spacer(1));
+				this.chatContainer.addChild(new ThemedText(() => theme.bold("Todos:"), 1, 0));
+				for (let i = 0; i < this.todos.length; i++) {
+					this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `${i + 1}. ${this.todos[i]}`), 1, 0));
+				}
+			}
+			this.ui.requestRender();
+			return;
+		}
+
+		// Add todo
+		this.todos.push(text);
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Todo added: ${text}`), 1, 0));
 		this.ui.requestRender();
 	}
 
