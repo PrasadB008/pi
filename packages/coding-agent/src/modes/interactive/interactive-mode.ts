@@ -115,6 +115,7 @@ import {
 } from "../../core/session-manager.ts";
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
+import { TodoList } from "../../core/todo.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
@@ -528,6 +529,9 @@ export class InteractiveMode {
 
 	// Track if editor is in bash mode (text starts with !)
 	private isBashMode = false;
+
+	// Track todo items for the session
+	private todoList = new TodoList();
 
 	// Track current bash execution component
 	private bashComponent: BashExecutionComponent | undefined = undefined;
@@ -3342,6 +3346,22 @@ export class InteractiveMode {
 			if (text === "/quit") {
 				this.editor.setText("");
 				await this.shutdown();
+				return;
+			}
+
+			// Handle /todo command
+			if (text.startsWith("/todo")) {
+				this.editor.addToHistory?.(text);
+				this.editor.setText("");
+				const todoText = text.slice(5).trim();
+				if (todoText) {
+					// Add to todo list
+					this.todoList.add(todoText);
+					this.showInfo(`Added to todo: ${todoText}`);
+				} else {
+					// List todos
+					this.showInfo(`Todo list:\n${this.todoList.format()}`);
+				}
 				return;
 			}
 
