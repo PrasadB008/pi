@@ -3267,6 +3267,11 @@ export class InteractiveMode {
 				this.editor.setText("");
 				return;
 			}
+			if (text === "/todos") {
+				this.editor.setText("");
+				await this.handleTodosCommand();
+				return;
+			}
 			if (text === "/hotkeys") {
 				this.handleHotkeysCommand();
 				this.editor.setText("");
@@ -6807,6 +6812,31 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new Markdown(changelogMarkdown, 1, 1, this.getMarkdownThemeWithSettings()));
 		this.chatContainer.addChild(new DynamicBorder());
+		this.ui.requestRender();
+	}
+
+	private async handleTodosCommand(): Promise<void> {
+		const cwd = this.sessionManager.getCwd();
+		const { items, truncated } = await findTodos(cwd);
+
+		const renderTodos = () => {
+			if (items.length === 0) return theme.fg("dim", "No TODO or FIXME comments found.");
+			const lines: string[] = [theme.bold(theme.fg("accent", `TODOs (${items.length}${truncated ? "+" : ""})`))];
+			let currentFile: string | undefined;
+			for (const item of items) {
+				if (item.file !== currentFile) {
+					currentFile = item.file;
+					lines.push("", theme.fg("mdLink", item.file));
+				}
+				const tag = item.tag === "FIXME" ? theme.fg("warning", item.tag) : theme.fg("accent", item.tag);
+				lines.push(`  ${theme.fg("dim", `${item.line}:`)} ${tag} ${item.text}`);
+			}
+			if (truncated) lines.push("", theme.fg("dim", "Results truncated; narrow the search or fix some TODOs."));
+			return lines.join("\n");
+		};
+
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(renderTodos, 1, 0));
 		this.ui.requestRender();
 	}
 
