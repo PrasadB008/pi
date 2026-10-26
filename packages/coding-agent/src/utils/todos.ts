@@ -41,7 +41,7 @@ const SKIPPED_DIRECTORIES = new Set([
 ]);
 
 // A tag only counts when it directly follows a comment token, so prose such as "list all todos" is ignored.
-const TODO_PATTERN = /(?:\/\/|\/\*|\*|#|--|<!--)\s*(TODO|FIXME)\b[:(\s-]*(.*)$/;
+const TODO_PATTERN = /(?:\/\/|\/\*|\*|#|--|<!--)\s*(TODO|FIXME)\b:?\s*-?\s*(.*)$/;
 
 const DEFAULT_MAX_ITEMS = 500;
 const DEFAULT_MAX_FILES = 20000;
