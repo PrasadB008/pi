@@ -8,6 +8,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import type { AgentMessage, ThinkingLevel } from "@earendil-works/pi-agent-core";
+import { TodoList } from "./todo.ts";
 import type { AuthEvent, AuthPrompt } from "@earendil-works/pi-ai";
 import {
 	type AssistantMessage,
@@ -548,7 +549,7 @@ export class InteractiveMode {
 	private shutdownRequested = false;
 
 	// Todo list for the session
-	private todoItems: string[] = [];
+	private todoList = new TodoList();
 
 	/** Reports working, blocked, done, and error states to terminals that support OSC 7501. */
 	private readonly programStatus = new ProgramStatusReporter(
@@ -6801,19 +6802,20 @@ export class InteractiveMode {
 	private handleTodoCommand(todoText: string | undefined): void {
 		if (todoText) {
 			// Add item to todo list
-			this.todoItems.push(todoText);
+			this.todoList.add(todoText);
 			this.chatContainer.addChild(new Spacer(1));
 			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Added to todo: ${todoText}`), 1, 0));
 		} else {
 			// List all todo items
 			this.chatContainer.addChild(new Spacer(1));
-			if (this.todoItems.length === 0) {
+			const items = this.todoList.getItems();
+			if (items.length === 0) {
 				this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", "No todo items"), 1, 0));
 			} else {
 				this.chatContainer.addChild(new ThemedText(() => theme.bold("Todo List"), 1, 0));
-				for (let i = 0; i < this.todoItems.length; i++) {
+				for (let i = 0; i < items.length; i++) {
 					this.chatContainer.addChild(
-						new ThemedText(() => theme.fg("dim", `${i + 1}. ${this.todoItems[i]}`), 1, 0)
+						new ThemedText(() => theme.fg("dim", `${i + 1}. ${items[i]}`), 1, 0)
 					);
 				}
 			}
