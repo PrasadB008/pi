@@ -4782,6 +4782,14 @@ export class InteractiveMode {
 		this.showStatus("Queued message for after compaction");
 	}
 
+	private isBuiltinCommand(text: string): boolean {
+		if (!text.startsWith("/")) return false;
+
+		const spaceIndex = text.indexOf(" ");
+		const commandName = spaceIndex === -1 ? text.slice(1) : text.slice(1, spaceIndex);
+		return commandName === "todo" || commandName === "compact" || commandName === "resume";
+	}
+
 	private isExtensionCommand(text: string): boolean {
 		if (!text.startsWith("/")) return false;
 

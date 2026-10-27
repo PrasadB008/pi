@@ -421,6 +421,9 @@ export class AgentSession {
 	private readonly _bashAbortControllers = new Set<AbortController>();
 	private _pendingBashMessages: BashExecutionMessage[] = [];
 
+	// Todo list
+	private _todos: string[] = [];
+
 	// Extension system
 	private _extensionRunner!: ExtensionRunner;
 	private _turnIndex = 0;
@@ -2062,7 +2065,15 @@ export class AgentSession {
 		}
 		const expandPromptTemplates = options?.expandPromptTemplates ?? true;
 		const preflightResult = options?.preflightResult;
-		// Handle extension commands first (execute immediately, even during streaming)
+		// Handle built-in commands first
+		if (expandPromptTemplates && text.startsWith("/")) {
+			const handled = await this._tryExecuteBuiltinCommand(text);
+			if (handled) {
+				preflightResult?.("handled");
+				return;
+			}
+		}
+		// Handle extension commands (execute immediately, even during streaming)
 		// Extension commands manage their own LLM interaction via pi.sendMessage()
 		if (expandPromptTemplates && text.startsWith("/")) {
 			const handled = await this._tryExecuteExtensionCommand(text);
@@ -2138,6 +2149,35 @@ export class AgentSession {
 		await this._startRun({ messageType: "user", prompt: expandedText, images: currentImages }, () =>
 			preflightResult?.("started"),
 		);
+	}
+
+	/**
+	 * Try to execute a built-in command. Returns true if command was found and executed.
+	 */
+	private async _tryExecuteBuiltinCommand(text: string): Promise<boolean> {
+		// Parse command name and args
+		const spaceIndex = text.indexOf(" ");
+		const commandName = spaceIndex === -1 ? text.slice(1) : text.slice(1, spaceIndex);
+		const args = spaceIndex === -1 ? "" : text.slice(spaceIndex + 1);
+
+		if (commandName === "todo") {
+			const trimmedArgs = args.trim();
+			if (trimmedArgs) {
+				this.addTodo(trimmedArgs);
+				this._extensionRunner.emitInfo(`Added todo: ${trimmedArgs}`);
+			} else {
+				const todos = this.getTodos();
+				if (todos.length === 0) {
+					this._extensionRunner.emitInfo("No todos yet.");
+				} else {
+					const todoList = todos.map((t, i) => `${i + 1}. ${t}`).join("\n");
+					this._extensionRunner.emitInfo(`Todos:\n${todoList}`);
+				}
+			}
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -2951,6 +2991,27 @@ export class AgentSession {
 	 */
 	abortBranchSummary(): void {
 		this._branchSummaryAbortController?.abort();
+	}
+
+	/**
+	 * Add a todo item to the session todo list.
+	 */
+	addTodo(text: string): void {
+		this._todos.push(text);
+	}
+
+	/**
+	 * Get all todo items for the session.
+	 */
+	getTodos(): readonly string[] {
+		return this._todos;
+	}
+
+	/**
+	 * Clear all todo items for the session.
+	 */
+	clearTodos(): void {
+		this._todos = [];
 	}
 
 	/**

@@ -535,6 +535,16 @@ export async function runRpcMode(runtimeHost: AgentSessionRuntime): Promise<neve
 				return success(id, "compact", result);
 			}
 
+			case "todo": {
+				const text = command.text?.trim();
+				if (text) {
+					session.addTodo(text);
+					return success(id, "todo", { added: text, todos: Array.from(session.getTodos()) });
+				} else {
+					return success(id, "todo", { todos: Array.from(session.getTodos()) });
+				}
+			}
+
 			case "set_auto_compaction": {
 				session.setAutoCompactionEnabled(command.enabled);
 				return success(id, "set_auto_compaction");
