@@ -456,6 +456,7 @@ export class InteractiveMode {
 	private mainScreenRenderState: TuiMainScreenRenderState | undefined;
 	private loadedResourcesContainer: Container;
 	private chatContainer: Container;
+	private todosBySession = new Map<string, TodoList>();
 	private documentContainer: Container;
 	private transcriptScrollView: TuiLayouts.ScrollView | undefined;
 	private fullscreenLayoutRoot: Component | undefined;
@@ -544,7 +545,6 @@ export class InteractiveMode {
 
 	// Messages queued while compaction is running
 	private compactionQueuedMessages: CompactionQueuedMessage[] = [];
-	private todoList = new TodoList();
 
 	// Shutdown state
 	private shutdownRequested = false;
@@ -6715,20 +6715,27 @@ export class InteractiveMode {
 		this.ui.requestRender();
 	}
 
-	private handleTodoCommand(text: string): void {
-		if (text) {
-			const position = this.todoList.add(text);
+	private handleTodoCommand(item: string): void {
+		const sessionId = this.sessionManager.getSessionId();
+		let todos = this.todosBySession.get(sessionId);
+		if (!todos) {
+			todos = new TodoList();
+			this.todosBySession.set(sessionId, todos);
+		}
+		if (item) {
+			todos.add(item);
+			const count = todos.items.length;
 			this.chatContainer.addChild(new Spacer(1));
-			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Todo added (#${position}): ${text}`), 1, 0));
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Todo added (#${count}): ${item}`), 1, 0));
 			this.ui.requestRender();
 			return;
 		}
 
-		const items = this.todoList.list();
-		if (items.length === 0) {
+		if (todos.items.length === 0) {
 			this.showStatus("No todo items. Add one with /todo <text>");
 			return;
 		}
+		const items = [...todos.items];
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(
 			new ThemedText(

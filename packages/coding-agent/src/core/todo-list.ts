@@ -1,16 +1,15 @@
 /** In-memory todo list backing the /todo slash command. */
 export class TodoList {
-	private items: string[] = [];
+	readonly items: string[] = [];
 
-	/** Add an item and return its 1-based position. Blank text is ignored (returns 0). */
-	add(text: string): number {
-		const item = text.trim();
-		if (!item) return 0;
-		this.items.push(item);
-		return this.items.length;
+	add(text: string): void {
+		this.items.push(text);
 	}
 
-	list(): string[] {
-		return [...this.items];
+	format(): string {
+		if (this.items.length === 0) {
+			return "No todos. Add one with /todo <text>";
+		}
+		return ["Todos:", ...this.items.map((item, index) => `${index + 1}. ${item}`)].join("\n");
 	}
 }
