@@ -544,6 +544,9 @@ export class InteractiveMode {
 	// Messages queued while compaction is running
 	private compactionQueuedMessages: CompactionQueuedMessage[] = [];
 
+	// Todo list for the session
+	private todoItems: string[] = [];
+
 	// Shutdown state
 	private shutdownRequested = false;
 
@@ -3336,6 +3339,12 @@ export class InteractiveMode {
 			}
 			if (text === "/resume") {
 				this.showSessionSelector();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : undefined;
+				this.handleTodoCommand(todoText);
 				this.editor.setText("");
 				return;
 			}
@@ -6807,6 +6816,30 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new Markdown(changelogMarkdown, 1, 1, this.getMarkdownThemeWithSettings()));
 		this.chatContainer.addChild(new DynamicBorder());
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string | undefined): void {
+		if (text) {
+			// Add item to todo list
+			this.todoItems.push(text);
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Added to todo: ${text}`), 1, 0));
+		} else {
+			// List all todo items
+			this.chatContainer.addChild(new Spacer(1));
+			if (this.todoItems.length === 0) {
+				this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", "No todo items"), 1, 0));
+			} else {
+				this.chatContainer.addChild(new ThemedText(() => theme.bold("Todo List"), 1, 0));
+				this.chatContainer.addChild(new Spacer(1));
+				this.todoItems.forEach((item, index) => {
+					this.chatContainer.addChild(
+						new ThemedText(() => theme.fg("dim", `${index + 1}. ${item}`), 1, 0),
+					);
+				});
+			}
+		}
 		this.ui.requestRender();
 	}
 
