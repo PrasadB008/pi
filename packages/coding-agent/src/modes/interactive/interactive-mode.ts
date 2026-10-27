@@ -547,6 +547,9 @@ export class InteractiveMode {
 	// Shutdown state
 	private shutdownRequested = false;
 
+	// Todo list for the session
+	private todoItems: string[] = [];
+
 	/** Reports working, blocked, done, and error states to terminals that support OSC 7501. */
 	private readonly programStatus = new ProgramStatusReporter(
 		() => this.ui.terminal,
@@ -3312,6 +3315,12 @@ export class InteractiveMode {
 				const customInstructions = text.startsWith("/compact ") ? text.slice(9).trim() : undefined;
 				this.editor.setText("");
 				await this.handleCompactCommand(customInstructions);
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : undefined;
+				this.editor.setText("");
+				this.handleTodoCommand(todoText);
 				return;
 			}
 			if (text === "/reload") {
@@ -7102,6 +7111,20 @@ export class InteractiveMode {
 			await this.session.compact(customInstructions);
 		} catch {
 			// Ignore, will be emitted as an event
+		}
+	}
+
+	private handleTodoCommand(text?: string): void {
+		if (text) {
+			this.todoItems.push(text);
+			this.showStatus(`Added todo: ${text}`);
+		} else {
+			if (this.todoItems.length === 0) {
+				this.showStatus("No todo items");
+			} else {
+				const todoList = this.todoItems.map((item, i) => `${i + 1}. ${item}`).join("\n");
+				this.showStatus(`Todo items:\n${todoList}`);
+			}
 		}
 	}
 
