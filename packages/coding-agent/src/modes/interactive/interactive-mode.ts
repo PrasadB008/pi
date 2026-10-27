@@ -547,6 +547,9 @@ export class InteractiveMode {
 	// Shutdown state
 	private shutdownRequested = false;
 
+	// Todo list for the session
+	private todoItems: string[] = [];
+
 	/** Reports working, blocked, done, and error states to terminals that support OSC 7501. */
 	private readonly programStatus = new ProgramStatusReporter(
 		() => this.ui.terminal,
@@ -3337,6 +3340,12 @@ export class InteractiveMode {
 			if (text === "/resume") {
 				this.showSessionSelector();
 				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : undefined;
+				this.editor.setText("");
+				this.handleTodoCommand(todoText);
 				return;
 			}
 			if (text === "/quit") {
@@ -6786,6 +6795,29 @@ export class InteractiveMode {
 
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new ThemedText(renderInfo, 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(todoText: string | undefined): void {
+		if (todoText) {
+			// Add item to todo list
+			this.todoItems.push(todoText);
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Added to todo: ${todoText}`), 1, 0));
+		} else {
+			// List all todo items
+			this.chatContainer.addChild(new Spacer(1));
+			if (this.todoItems.length === 0) {
+				this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", "No todo items"), 1, 0));
+			} else {
+				this.chatContainer.addChild(new ThemedText(() => theme.bold("Todo List"), 1, 0));
+				for (let i = 0; i < this.todoItems.length; i++) {
+					this.chatContainer.addChild(
+						new ThemedText(() => theme.fg("dim", `${i + 1}. ${this.todoItems[i]}`), 1, 0)
+					);
+				}
+			}
+		}
 		this.ui.requestRender();
 	}
 
