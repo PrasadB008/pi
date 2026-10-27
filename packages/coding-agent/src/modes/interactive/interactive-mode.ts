@@ -115,6 +115,7 @@ import {
 } from "../../core/session-manager.ts";
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
+import { TodoList } from "../../core/todo-list.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
@@ -521,6 +522,9 @@ export class InteractiveMode {
 
 	// Skill commands: command name -> skill file path
 	private skillCommands = new Map<string, string>();
+
+	// Todo list for the session
+	private todoList = new TodoList();
 
 	// Agent subscription unsubscribe function
 	private unsubscribe?: () => void;
@@ -3336,6 +3340,12 @@ export class InteractiveMode {
 			}
 			if (text === "/resume") {
 				this.showSessionSelector();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : undefined;
+				this.handleTodoCommand(todoText);
 				this.editor.setText("");
 				return;
 			}
@@ -6999,6 +7009,26 @@ export class InteractiveMode {
 	private handleDementedDelves(): void {
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new EarendilAnnouncementComponent());
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(todoText: string | undefined): void {
+		this.chatContainer.addChild(new Spacer(1));
+
+		if (todoText) {
+			// Add a new todo item
+			this.todoList.add(todoText);
+			this.chatContainer.addChild(
+				new ThemedText(() => `${theme.fg("accent", "✓ Added todo")}: ${todoText}`, 1, 1),
+			);
+		} else {
+			// List all todos
+			const todoOutput = this.todoList.format();
+			this.chatContainer.addChild(
+				new ThemedText(() => `${theme.fg("accent", "Todos")}:\n${todoOutput}`, 1, 1),
+			);
+		}
+
 		this.ui.requestRender();
 	}
 
