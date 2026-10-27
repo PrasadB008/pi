@@ -186,6 +186,7 @@ import { refreshModelCatalogs } from "./model-catalog-refresh.ts";
 import { getModelSearchText } from "./model-search.ts";
 import { type BlockedStatus, ProgramStatusReporter } from "./program-status-reporter.ts";
 import { shareSession } from "./session-share.ts";
+import { TodoList } from "./todo.ts";
 import {
 	getAvailableThemes,
 	getAvailableThemesWithPaths,
@@ -546,6 +547,10 @@ export class InteractiveMode {
 
 	// Shutdown state
 	private shutdownRequested = false;
+
+	// Todo list
+	private todoList = new TodoList();
+
 
 	/** Reports working, blocked, done, and error states to terminals that support OSC 7501. */
 	private readonly programStatus = new ProgramStatusReporter(
@@ -3336,6 +3341,12 @@ export class InteractiveMode {
 			}
 			if (text === "/resume") {
 				this.showSessionSelector();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : undefined;
+				this.handleTodoCommand(todoText);
 				this.editor.setText("");
 				return;
 			}
@@ -6999,6 +7010,22 @@ export class InteractiveMode {
 	private handleDementedDelves(): void {
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new EarendilAnnouncementComponent());
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text?: string): void {
+		this.chatContainer.addChild(new Spacer(1));
+		if (text) {
+			// Add a new todo item
+			this.todoList.add(text);
+			this.chatContainer.addChild(
+				new ThemedText(() => `${theme.fg("accent", "✓ Added todo")}\n${theme.fg("muted", text)}`, 1, 1),
+			);
+		} else {
+			// List all todos
+			const todoText = this.todoList.format();
+			this.chatContainer.addChild(new ThemedText(() => todoText, 1, 1));
+		}
 		this.ui.requestRender();
 	}
 

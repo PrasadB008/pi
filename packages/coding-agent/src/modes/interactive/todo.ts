@@ -1,0 +1,46 @@
+/**
+ * Todo list management for the interactive mode.
+ */
+
+export interface TodoItem {
+	id: string;
+	text: string;
+	createdAt: Date;
+}
+
+export class TodoList {
+	private items: TodoItem[] = [];
+	private nextId = 1;
+
+	add(text: string): TodoItem {
+		const item: TodoItem = {
+			id: String(this.nextId++),
+			text,
+			createdAt: new Date(),
+		};
+		this.items.push(item);
+		return item;
+	}
+
+	getAll(): TodoItem[] {
+		return [...this.items];
+	}
+
+	clear(): void {
+		this.items = [];
+		this.nextId = 1;
+	}
+
+	isEmpty(): boolean {
+		return this.items.length === 0;
+	}
+
+	format(): string {
+		if (this.isEmpty()) {
+			return "No todos yet. Use /todo <text> to add one.";
+		}
+		return this.items
+			.map((item, index) => `${index + 1}. ${item.text}`)
+			.join("\n");
+	}
+}
