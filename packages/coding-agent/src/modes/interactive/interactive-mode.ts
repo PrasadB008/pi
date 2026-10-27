@@ -117,6 +117,7 @@ import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
+import { formatTodoList, TodoList } from "../../core/todo-list.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
@@ -521,6 +522,8 @@ export class InteractiveMode {
 
 	// Skill commands: command name -> skill file path
 	private skillCommands = new Map<string, string>();
+	// Session todo list for /todo; in-memory only, cleared by /new
+	private readonly todoList = new TodoList();
 
 	// Agent subscription unsubscribe function
 	private unsubscribe?: () => void;
@@ -3254,6 +3257,11 @@ export class InteractiveMode {
 			}
 			if (text === "/name" || text.startsWith("/name ")) {
 				this.handleNameCommand(text);
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6708,6 +6716,17 @@ export class InteractiveMode {
 		this.ui.requestRender();
 	}
 
+	private handleTodoCommand(text: string): void {
+		const number = this.todoList.add(text.slice("/todo".length));
+		const message =
+			number !== undefined
+				? `Added todo #${number}: ${this.todoList.list()[number - 1]}`
+				: (formatTodoList(this.todoList.list()) ?? "No todos yet. Add one with /todo <text>");
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", message), 1, 0));
+		this.ui.requestRender();
+	}
+
 	private handleSessionCommand(): void {
 		const stats = this.session.getSessionStats();
 		const sessionName = this.sessionManager.getSessionName();
@@ -6948,6 +6967,7 @@ export class InteractiveMode {
 			if (result.cancelled) {
 				return;
 			}
+			this.todoList.clear();
 			this.chatContainer.addChild(new Spacer(1));
 			this.chatContainer.addChild(new ThemedText(() => theme.fg("accent", "✓ New session started"), 1, 1));
 			this.ui.requestRender();
