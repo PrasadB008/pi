@@ -28,7 +28,9 @@ describe("formatTodos", () => {
 			],
 			total: 10,
 		});
-		expect(text).toBe("a.ts\n  1: // TODO one\n  5: // FIXME two\n\nb.ts\n  2: // TODO three\n\nShowing first 3 of 10 matches.");
+		expect(text).toBe(
+			"a.ts\n  1: // TODO one\n  5: // FIXME two\n\nb.ts\n  2: // TODO three\n\nShowing first 3 of 10 matches.",
+		);
 	});
 });
 
