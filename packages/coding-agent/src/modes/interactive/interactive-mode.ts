@@ -116,6 +116,7 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
+import { TodoList } from "../../core/todo-list.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
@@ -546,6 +547,9 @@ export class InteractiveMode {
 
 	// Shutdown state
 	private shutdownRequested = false;
+
+	// Session todo list
+	private todoList = new TodoList();
 
 	/** Reports working, blocked, done, and error states to terminals that support OSC 7501. */
 	private readonly programStatus = new ProgramStatusReporter(
@@ -3336,6 +3340,11 @@ export class InteractiveMode {
 			}
 			if (text === "/resume") {
 				this.showSessionSelector();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6999,6 +7008,31 @@ export class InteractiveMode {
 	private handleDementedDelves(): void {
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new EarendilAnnouncementComponent());
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		this.chatContainer.addChild(new Spacer(1));
+
+		if (text === "/todo") {
+			// List all todo items
+			const formatted = this.todoList.format();
+			this.chatContainer.addChild(new ThemedText(() => formatted, 1, 1));
+		} else {
+			// Add new todo item
+			const todoText = text.slice(6).trim(); // Remove "/todo " prefix
+			if (todoText) {
+				this.todoList.add(todoText);
+				this.chatContainer.addChild(
+					new ThemedText(
+						() => `${theme.fg("accent", "✓ Added to todo")}: ${todoText}`,
+						1,
+						1,
+					),
+				);
+			}
+		}
+
 		this.ui.requestRender();
 	}
 
