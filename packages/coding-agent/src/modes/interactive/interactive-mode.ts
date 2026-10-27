@@ -544,6 +544,9 @@ export class InteractiveMode {
 	// Messages queued while compaction is running
 	private compactionQueuedMessages: CompactionQueuedMessage[] = [];
 
+	// Session todo list
+	private todos: string[] = [];
+
 	// Shutdown state
 	private shutdownRequested = false;
 
@@ -3317,6 +3320,11 @@ export class InteractiveMode {
 			if (text === "/reload") {
 				this.editor.setText("");
 				await this.handleReloadCommand();
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.editor.setText("");
+				this.handleTodoCommand(text);
 				return;
 			}
 			if (text === "/debug") {
@@ -6953,6 +6961,25 @@ export class InteractiveMode {
 			this.ui.requestRender();
 		} catch (error: unknown) {
 			await this.handleFatalRuntimeError("Failed to create session", error);
+		}
+	}
+
+	private handleTodoCommand(text: string): void {
+		if (text === "/todo") {
+			// List todos
+			if (this.todos.length === 0) {
+				this.showInfo("No todos yet. Use /todo <text> to add one.");
+			} else {
+				const todoList = this.todos.map((todo, i) => `${i + 1}. ${todo}`).join("\n");
+				this.showInfo(`Todos:\n${todoList}`);
+			}
+		} else if (text.startsWith("/todo ")) {
+			// Add todo
+			const todoText = text.slice(6).trim();
+			if (todoText) {
+				this.todos.push(todoText);
+				this.showInfo(`Added: ${todoText}`);
+			}
 		}
 	}
 
