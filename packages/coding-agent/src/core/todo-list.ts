@@ -15,9 +15,7 @@ export class TodoList {
 	}
 }
 
-/** Returns the argument of a `/todo` input, or undefined when the input is not a `/todo` command. */
-export function parseTodoCommand(text: string): string | undefined {
-	if (text === "/todo") return "";
-	if (text.startsWith("/todo ")) return text.slice("/todo ".length).trim();
-	return undefined;
+/** Returns the trimmed text after "/todo" ("" when there is none). */
+export function getTodoArgument(text: string): string {
+	return text.slice("/todo".length).trim();
 }

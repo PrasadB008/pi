@@ -116,8 +116,8 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
-import { parseTodoCommand, TodoList } from "../../core/todo-list.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
+import { getTodoArgument, TodoList } from "../../core/todo-list.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
@@ -3264,9 +3264,8 @@ export class InteractiveMode {
 				this.editor.setText("");
 				return;
 			}
-			const todoArgument = parseTodoCommand(text);
-			if (todoArgument !== undefined) {
-				this.handleTodoCommand(todoArgument);
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6716,7 +6715,8 @@ export class InteractiveMode {
 		this.ui.requestRender();
 	}
 
-	private handleTodoCommand(argument: string): void {
+	private handleTodoCommand(text: string): void {
+		const argument = getTodoArgument(text);
 		if (argument) {
 			this.todoList.add(argument);
 			this.chatContainer.addChild(new Spacer(1));
@@ -6732,9 +6732,7 @@ export class InteractiveMode {
 		}
 		const lines = items.map((item, index) => `${index + 1}. ${item}`);
 		this.chatContainer.addChild(new Spacer(1));
-		this.chatContainer.addChild(
-			new ThemedText(() => `${theme.bold("Todos")}\n\n${lines.join("\n")}`, 1, 0),
-		);
+		this.chatContainer.addChild(new ThemedText(() => `${theme.bold("Todos")}\n\n${lines.join("\n")}`, 1, 0));
 		this.ui.requestRender();
 	}
 
