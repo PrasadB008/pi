@@ -117,6 +117,7 @@ import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
+import { findTodos, formatTodos } from "../../core/todos.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
@@ -3260,6 +3261,11 @@ export class InteractiveMode {
 			if (text === "/session") {
 				this.handleSessionCommand();
 				this.editor.setText("");
+				return;
+			}
+			if (text === "/todos") {
+				this.editor.setText("");
+				await this.handleTodosCommand();
 				return;
 			}
 			if (text === "/changelog") {
@@ -6706,6 +6712,18 @@ export class InteractiveMode {
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
 		this.ui.requestRender();
+	}
+
+	private async handleTodosCommand(): Promise<void> {
+		try {
+			const result = await findTodos(this.sessionManager.getCwd());
+			const text = formatTodos(result);
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", text), 1, 0));
+			this.ui.requestRender();
+		} catch (error) {
+			this.showError(`/todos failed: ${error instanceof Error ? error.message : String(error)}`);
+		}
 	}
 
 	private handleSessionCommand(): void {
