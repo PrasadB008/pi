@@ -115,6 +115,7 @@ import {
 } from "../../core/session-manager.ts";
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
+import { formatTodoList, parseTodoCommand, TodoList } from "../../core/todo-list.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
@@ -455,6 +456,7 @@ export class InteractiveMode {
 	private mainScreenRenderState: TuiMainScreenRenderState | undefined;
 	private loadedResourcesContainer: Container;
 	private chatContainer: Container;
+	private todoList = new TodoList();
 	private documentContainer: Container;
 	private transcriptScrollView: TuiLayouts.ScrollView | undefined;
 	private fullscreenLayoutRoot: Component | undefined;
@@ -3254,6 +3256,11 @@ export class InteractiveMode {
 			}
 			if (text === "/name" || text.startsWith("/name ")) {
 				this.handleNameCommand(text);
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6708,6 +6715,14 @@ export class InteractiveMode {
 		this.ui.requestRender();
 	}
 
+	private handleTodoCommand(text: string): void {
+		const item = parseTodoCommand(text);
+		const message = item ? `Todo added (#${this.todoList.add(item)}): ${item}` : formatTodoList(this.todoList.list());
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", message), 1, 0));
+		this.ui.requestRender();
+	}
+
 	private handleSessionCommand(): void {
 		const stats = this.session.getSessionStats();
 		const sessionName = this.sessionManager.getSessionName();
@@ -6948,6 +6963,7 @@ export class InteractiveMode {
 			if (result.cancelled) {
 				return;
 			}
+			this.todoList.clear();
 			this.chatContainer.addChild(new Spacer(1));
 			this.chatContainer.addChild(new ThemedText(() => theme.fg("accent", "✓ New session started"), 1, 1));
 			this.ui.requestRender();
