@@ -117,6 +117,7 @@ import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
+import { formatTodoList, TodoStore } from "../../core/todo.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
@@ -556,6 +557,7 @@ export class InteractiveMode {
 	/** The `/bug` hint is shown at most once per session so error output stays readable. */
 	private bugReportHintShown = false;
 	private installChangeWarningShown = false;
+	private todoStore = new TodoStore();
 
 	// Extension UI state
 	private extensionSelector: ExtensionSelectorComponent | undefined = undefined;
@@ -3259,6 +3261,11 @@ export class InteractiveMode {
 			}
 			if (text === "/session") {
 				this.handleSessionCommand();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text.slice("/todo".length).trim());
 				this.editor.setText("");
 				return;
 			}
@@ -6786,6 +6793,19 @@ export class InteractiveMode {
 
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new ThemedText(renderInfo, 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		const sessionId = this.sessionManager.getSessionId();
+		if (text) {
+			const count = this.todoStore.add(sessionId, text);
+			this.showStatus(`Added todo #${count}: ${text}`);
+			return;
+		}
+		const items = this.todoStore.list(sessionId);
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(() => formatTodoList(items), 1, 0));
 		this.ui.requestRender();
 	}
 
