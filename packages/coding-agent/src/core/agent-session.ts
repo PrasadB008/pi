@@ -421,6 +421,9 @@ export class AgentSession {
 	private readonly _bashAbortControllers = new Set<AbortController>();
 	private _pendingBashMessages: BashExecutionMessage[] = [];
 
+	// Todo list state
+	private _todoItems: string[] = [];
+
 	// Extension system
 	private _extensionRunner!: ExtensionRunner;
 	private _turnIndex = 0;
@@ -4424,5 +4427,21 @@ export class AgentSession {
 	 */
 	get extensionRunner(): ExtensionRunner {
 		return this._extensionRunner;
+	}
+
+	// =========================================================================
+	// Todo List
+	// =========================================================================
+
+	addTodoItem(text: string): void {
+		this._todoItems.push(text);
+	}
+
+	getTodoItems(): readonly string[] {
+		return this._todoItems;
+	}
+
+	clearTodoItems(): void {
+		this._todoItems = [];
 	}
 }

@@ -3319,6 +3319,11 @@ export class InteractiveMode {
 				await this.handleReloadCommand();
 				return;
 			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.editor.setText("");
+				this.handleTodoCommand(text);
+				return;
+			}
 			if (text === "/debug") {
 				this.handleDebugCommand();
 				this.editor.setText("");
@@ -6999,6 +7004,34 @@ export class InteractiveMode {
 	private handleDementedDelves(): void {
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new EarendilAnnouncementComponent());
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : "";
+
+		if (todoText) {
+			// Add item to todo list
+			this.session.addTodoItem(todoText);
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(
+				new ThemedText(() => theme.fg("accent", `✓ Added to todo: ${todoText}`), 1, 1),
+			);
+		} else {
+			// List all todo items
+			const items = this.session.getTodoItems();
+			this.chatContainer.addChild(new Spacer(1));
+			if (items.length === 0) {
+				this.chatContainer.addChild(
+					new ThemedText(() => theme.fg("muted", "No todo items yet. Use /todo <text> to add one."), 1, 1),
+				);
+			} else {
+				const itemsList = items.map((item, idx) => `${idx + 1}. ${item}`).join("\n");
+				this.chatContainer.addChild(
+					new ThemedText(() => theme.fg("accent", "Todo items:\n") + itemsList, 1, 1),
+				);
+			}
+		}
 		this.ui.requestRender();
 	}
 
