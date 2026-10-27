@@ -5,6 +5,7 @@
 ### Added
 
 - Added a Models Configuration reference generated from the `models.json` schema, listing all provider, model, model override, and compatibility fields ([#10790](https://github.com/earendil-works/pi/issues/10790))
+- Added `/todos` slash command that lists TODO and FIXME comments in tracked and untracked, non-ignored project files, grouped by file with line numbers (capped at 200 matches)
 
 ### Changed
 
