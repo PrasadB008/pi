@@ -116,6 +116,7 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
+import { TodoList } from "../../core/todo-list.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
@@ -498,7 +499,7 @@ export class InteractiveMode {
 	private lastStatusSpacer: Spacer | undefined = undefined;
 	private lastStatusText: ThemedText | undefined = undefined;
 	private lastStatusMessage = "";
-	private todoItems: string[] = [];
+	private todoList = new TodoList();
 	private managedToolStatusStarted = false;
 
 	// Streaming message tracking
@@ -6716,15 +6717,15 @@ export class InteractiveMode {
 
 	private handleTodoCommand(item: string): void {
 		if (item) {
-			this.todoItems.push(item);
-			this.showStatus(`Todo added (${this.todoItems.length}): ${item}`);
+			const count = this.todoList.add(item);
+			this.showStatus(`Todo added (${count}): ${item}`);
 			return;
 		}
-		if (this.todoItems.length === 0) {
+		if (this.todoList.list().length === 0) {
 			this.showStatus("No todo items. Add one with /todo <text>");
 			return;
 		}
-		const lines = this.todoItems.map((todo, index) => `${index + 1}. ${todo}`);
+		const lines = this.todoList.format();
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Todo:\n${lines.join("\n")}`), 1, 0));
 		this.ui.requestRender();
