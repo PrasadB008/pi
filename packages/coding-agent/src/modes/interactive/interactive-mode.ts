@@ -478,6 +478,7 @@ export class InteractiveMode {
 	private isInitialized = false;
 	private onInputCallback?: (text: string) => void;
 	private pendingUserInputs: string[] = [];
+	private todoItems: string[] = [];
 	private activeStatusIndicator: StatusIndicator | undefined = undefined;
 	private activeWorkingIndicatorEmbedded = false;
 	private readonly idleStatus = new IdleStatus();
@@ -3254,6 +3255,11 @@ export class InteractiveMode {
 			}
 			if (text === "/name" || text.startsWith("/name ")) {
 				this.handleNameCommand(text);
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6705,6 +6711,22 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		const item = text.replace(/^\/todo\s*/, "").trim();
+		this.chatContainer.addChild(new Spacer(1));
+		if (item) {
+			this.todoItems.push(item);
+			const message = `Todo added (${this.todoItems.length}): ${item}`;
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", message), 1, 0));
+		} else if (this.todoItems.length === 0) {
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", "No todos. Add one with /todo <text>"), 1, 0));
+		} else {
+			const list = this.todoItems.map((todo, index) => `${index + 1}. ${todo}`).join("\n");
+			this.chatContainer.addChild(new ThemedText(() => `${theme.bold("Todos")}\n${list}`, 1, 0));
+		}
 		this.ui.requestRender();
 	}
 
