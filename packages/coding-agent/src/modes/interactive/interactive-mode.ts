@@ -131,8 +131,8 @@ import { getCwdRelativePath } from "../../utils/paths.ts";
 import { getPiUserAgent } from "../../utils/pi-user-agent.ts";
 import { killTrackedDetachedChildren } from "../../utils/shell.ts";
 import { loadAllHighlightLanguages } from "../../utils/syntax-highlight.ts";
-import { ensureTool, type ToolStatus } from "../../utils/tools-manager.ts";
 import { TodoList } from "../../utils/todo-list.ts";
+import { ensureTool, type ToolStatus } from "../../utils/tools-manager.ts";
 import { checkForNewPiVersion, type LatestPiRelease } from "../../utils/version-check.ts";
 import { reportBug } from "./bug-report.ts";
 import { createChatViewport } from "./chat-viewport.ts";
@@ -5197,7 +5197,10 @@ export class InteractiveMode {
 			if (this.todoList.isEmpty()) {
 				this.showStatus("No todo items");
 			} else {
-				const items = this.todoList.list().map((item, i) => `${i + 1}. ${item}`).join("\n");
+				const items = this.todoList
+					.list()
+					.map((item, i) => `${i + 1}. ${item}`)
+					.join("\n");
 				this.showStatus(`Todo items:\n${items}`);
 			}
 		}
