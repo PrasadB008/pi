@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { TodoList } from "../src/core/todo-list.ts";
 
 describe("TodoList", () => {
