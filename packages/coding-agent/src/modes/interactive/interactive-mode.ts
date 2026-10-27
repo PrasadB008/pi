@@ -131,6 +131,7 @@ import { getCwdRelativePath } from "../../utils/paths.ts";
 import { getPiUserAgent } from "../../utils/pi-user-agent.ts";
 import { killTrackedDetachedChildren } from "../../utils/shell.ts";
 import { loadAllHighlightLanguages } from "../../utils/syntax-highlight.ts";
+import { TodoList } from "../../utils/todo-list.ts";
 import { ensureTool, type ToolStatus } from "../../utils/tools-manager.ts";
 import { checkForNewPiVersion, type LatestPiRelease } from "../../utils/version-check.ts";
 import { reportBug } from "./bug-report.ts";
@@ -521,6 +522,9 @@ export class InteractiveMode {
 
 	// Skill commands: command name -> skill file path
 	private skillCommands = new Map<string, string>();
+
+	// Todo list for the session
+	private todoList = new TodoList();
 
 	// Agent subscription unsubscribe function
 	private unsubscribe?: () => void;
@@ -3339,6 +3343,12 @@ export class InteractiveMode {
 				this.editor.setText("");
 				return;
 			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : "";
+				this.handleTodoCommand(todoText);
+				this.editor.setText("");
+				return;
+			}
 			if (text === "/quit") {
 				this.editor.setText("");
 				await this.shutdown();
@@ -5175,6 +5185,25 @@ export class InteractiveMode {
 		}
 
 		this.selectThinkingLevel(level, false);
+	}
+
+	private handleTodoCommand(text: string): void {
+		if (text) {
+			// Add item to todo list
+			this.todoList.add(text);
+			this.showStatus(`Added: ${text}`);
+		} else {
+			// List all items
+			if (this.todoList.isEmpty()) {
+				this.showStatus("No todo items");
+			} else {
+				const items = this.todoList
+					.list()
+					.map((item, i) => `${i + 1}. ${item}`)
+					.join("\n");
+				this.showStatus(`Todo items:\n${items}`);
+			}
+		}
 	}
 
 	private selectThinkingLevel(level: ThinkingLevel, persist: boolean): void {
