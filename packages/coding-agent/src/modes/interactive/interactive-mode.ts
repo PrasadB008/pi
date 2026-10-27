@@ -115,6 +115,7 @@ import {
 } from "../../core/session-manager.ts";
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
+import { TodoList } from "../../core/todo-list.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
@@ -543,6 +544,9 @@ export class InteractiveMode {
 
 	// Messages queued while compaction is running
 	private compactionQueuedMessages: CompactionQueuedMessage[] = [];
+
+	// Todo list for the session
+	private todoList = new TodoList();
 
 	// Shutdown state
 	private shutdownRequested = false;
@@ -3336,6 +3340,11 @@ export class InteractiveMode {
 			}
 			if (text === "/resume") {
 				this.showSessionSelector();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -7000,6 +7009,36 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new EarendilAnnouncementComponent());
 		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		if (text === "/todo") {
+			// List all todo items
+			const items = this.todoList.getItems();
+			this.chatContainer.addChild(new Spacer(1));
+			if (items.length === 0) {
+				this.chatContainer.addChild(
+					new ThemedText(() => theme.fg("muted", "No todo items"), 1, 1),
+				);
+			} else {
+				const todoText = items.map((item, idx) => `${idx + 1}. ${item}`).join("\n");
+				this.chatContainer.addChild(
+					new ThemedText(() => todoText, 1, 1),
+				);
+			}
+			this.ui.requestRender();
+		} else if (text.startsWith("/todo ")) {
+			// Add a new todo item
+			const todoText = text.slice(6).trim();
+			if (todoText) {
+				this.todoList.add(todoText);
+				this.chatContainer.addChild(new Spacer(1));
+				this.chatContainer.addChild(
+					new ThemedText(() => theme.fg("accent", `✓ Added: ${todoText}`), 1, 1),
+				);
+				this.ui.requestRender();
+			}
+		}
 	}
 
 	private async handleBashCommand(command: string, excludeFromContext = false): Promise<void> {
