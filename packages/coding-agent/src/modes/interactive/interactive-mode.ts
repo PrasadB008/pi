@@ -184,6 +184,7 @@ import { UserMessageSelectorComponent } from "./components/user-message-selector
 import { editInExternalEditor } from "./external-editor.ts";
 import { refreshModelCatalogs } from "./model-catalog-refresh.ts";
 import { getModelSearchText } from "./model-search.ts";
+import { TodoStore } from "./todo.ts";
 import { type BlockedStatus, ProgramStatusReporter } from "./program-status-reporter.ts";
 import { shareSession } from "./session-share.ts";
 import {
@@ -546,6 +547,9 @@ export class InteractiveMode {
 
 	// Shutdown state
 	private shutdownRequested = false;
+
+	// Todo store for session todos
+	private todoStore = new TodoStore();
 
 	/** Reports working, blocked, done, and error states to terminals that support OSC 7501. */
 	private readonly programStatus = new ProgramStatusReporter(
@@ -3317,6 +3321,12 @@ export class InteractiveMode {
 			if (text === "/reload") {
 				this.editor.setText("");
 				await this.handleReloadCommand();
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : undefined;
+				this.editor.setText("");
+				this.handleTodoCommand(todoText);
 				return;
 			}
 			if (text === "/debug") {
@@ -6532,6 +6542,18 @@ export class InteractiveMode {
 				dismissReloadBox(previousEditor as Component);
 			}
 			this.showError(`Reload failed: ${error instanceof Error ? error.message : String(error)}`);
+		}
+	}
+
+	private handleTodoCommand(text?: string): void {
+		if (text) {
+			// Add a new todo
+			this.todoStore.add(text);
+			this.showStatus(`Added todo: ${text}`);
+		} else {
+			// List todos
+			const todoList = this.todoStore.format();
+			this.showStatus(`Todos:\n${todoList}`);
 		}
 	}
 
