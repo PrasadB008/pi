@@ -3264,9 +3264,8 @@ export class InteractiveMode {
 				this.editor.setText("");
 				return;
 			}
-			const todoArg = parseTodoCommand(text);
-			if (todoArg !== undefined) {
-				this.handleTodoCommand(todoArg);
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6716,7 +6715,8 @@ export class InteractiveMode {
 		this.ui.requestRender();
 	}
 
-	private handleTodoCommand(arg: string): void {
+	private handleTodoCommand(text: string): void {
+		const arg = parseTodoCommand(text) ?? "";
 		if (arg) {
 			this.todoList.add(arg);
 			this.showStatus(`Todo added: ${arg}`);
