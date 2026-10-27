@@ -116,6 +116,7 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
+import { formatTodoList, parseTodoCommand, TodoList } from "../../core/todo-list.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
@@ -455,6 +456,7 @@ export class InteractiveMode {
 	private mainScreenRenderState: TuiMainScreenRenderState | undefined;
 	private loadedResourcesContainer: Container;
 	private chatContainer: Container;
+	private todoList = new TodoList();
 	private documentContainer: Container;
 	private transcriptScrollView: TuiLayouts.ScrollView | undefined;
 	private fullscreenLayoutRoot: Component | undefined;
@@ -3254,6 +3256,11 @@ export class InteractiveMode {
 			}
 			if (text === "/name" || text.startsWith("/name ")) {
 				this.handleNameCommand(text);
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6681,6 +6688,19 @@ export class InteractiveMode {
 		} catch (error) {
 			this.showError(error instanceof Error ? error.message : String(error));
 		}
+	}
+
+	private handleTodoCommand(text: string): void {
+		const newItem = parseTodoCommand(text);
+		this.chatContainer.addChild(new Spacer(1));
+		if (newItem) {
+			this.todoList.add(newItem);
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Todo added: ${newItem}`), 1, 0));
+		} else {
+			const listing = formatTodoList(this.todoList.list());
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", listing), 1, 0));
+		}
+		this.ui.requestRender();
 	}
 
 	private handleNameCommand(text: string): void {
