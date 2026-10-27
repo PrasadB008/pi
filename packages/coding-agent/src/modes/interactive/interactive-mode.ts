@@ -116,6 +116,7 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
+import { formatTodoList, TodoList } from "../../core/todo-list.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
@@ -481,6 +482,7 @@ export class InteractiveMode {
 	private activeStatusIndicator: StatusIndicator | undefined = undefined;
 	private activeWorkingIndicatorEmbedded = false;
 	private readonly idleStatus = new IdleStatus();
+	private readonly todoList = new TodoList();
 	private workingMessage: string | undefined = undefined;
 	private workingVisible = true;
 	private workingIndicatorOptions: WorkingIndicatorOptions | undefined = undefined;
@@ -3259,6 +3261,11 @@ export class InteractiveMode {
 			}
 			if (text === "/session") {
 				this.handleSessionCommand();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6708,6 +6715,21 @@ export class InteractiveMode {
 		this.ui.requestRender();
 	}
 
+	private handleTodoCommand(text: string): void {
+		const item = text.replace(/^\/todo\s*/, "").trim();
+		let message: string;
+		if (item) {
+			const number = this.todoList.add(item);
+			message = `Todo #${number} added: ${item}`;
+		} else {
+			const items = this.todoList.list();
+			message = items.length > 0 ? `Todo list:\n${formatTodoList(items)}` : "No todo items. Use /todo <text> to add one.";
+		}
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", message), 1, 0));
+		this.ui.requestRender();
+	}
+
 	private handleSessionCommand(): void {
 		const stats = this.session.getSessionStats();
 		const sessionName = this.sessionManager.getSessionName();
@@ -6948,6 +6970,7 @@ export class InteractiveMode {
 			if (result.cancelled) {
 				return;
 			}
+			this.todoList.clear();
 			this.chatContainer.addChild(new Spacer(1));
 			this.chatContainer.addChild(new ThemedText(() => theme.fg("accent", "✓ New session started"), 1, 1));
 			this.ui.requestRender();
