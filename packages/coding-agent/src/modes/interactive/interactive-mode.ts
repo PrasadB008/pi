@@ -522,6 +522,9 @@ export class InteractiveMode {
 	// Skill commands: command name -> skill file path
 	private skillCommands = new Map<string, string>();
 
+	// Todo items for the session
+	private todoItems: string[] = [];
+
 	// Agent subscription unsubscribe function
 	private unsubscribe?: () => void;
 	private signalCleanupHandlers: Array<() => void> = [];
@@ -3322,6 +3325,12 @@ export class InteractiveMode {
 			if (text === "/debug") {
 				this.handleDebugCommand();
 				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : undefined;
+				this.editor.setText("");
+				this.handleTodoCommand(todoText);
 				return;
 			}
 			if (text === "/arminsayshi") {
@@ -6986,6 +6995,30 @@ export class InteractiveMode {
 		this.chatContainer.addChild(
 			new ThemedText(() => `${theme.fg("accent", "✓ Debug log written")}\n${theme.fg("muted", debugLogPath)}`, 1, 1),
 		);
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text?: string): void {
+		this.chatContainer.addChild(new Spacer(1));
+
+		if (text) {
+			// Add to todo list
+			this.todoItems.push(text);
+			this.chatContainer.addChild(
+				new ThemedText(() => `${theme.fg("accent", "✓ Added to todo")}: ${text}`, 1, 1),
+			);
+		} else {
+			// List todo items
+			if (this.todoItems.length === 0) {
+				this.chatContainer.addChild(new ThemedText(() => theme.fg("muted", "No todo items"), 1, 1));
+			} else {
+				const todoList = this.todoItems
+					.map((item, idx) => `${theme.fg("accent", `${idx + 1}.`)} ${item}`)
+					.join("\n");
+				this.chatContainer.addChild(new ThemedText(() => todoList, 1, 1));
+			}
+		}
+
 		this.ui.requestRender();
 	}
 
