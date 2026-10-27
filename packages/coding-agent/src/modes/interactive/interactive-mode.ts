@@ -132,6 +132,7 @@ import { getPiUserAgent } from "../../utils/pi-user-agent.ts";
 import { killTrackedDetachedChildren } from "../../utils/shell.ts";
 import { loadAllHighlightLanguages } from "../../utils/syntax-highlight.ts";
 import { ensureTool, type ToolStatus } from "../../utils/tools-manager.ts";
+import { TodoList } from "../../utils/todo-list.ts";
 import { checkForNewPiVersion, type LatestPiRelease } from "../../utils/version-check.ts";
 import { reportBug } from "./bug-report.ts";
 import { createChatViewport } from "./chat-viewport.ts";
@@ -548,7 +549,7 @@ export class InteractiveMode {
 	private shutdownRequested = false;
 
 	// Todo list for the session
-	private todoItems: string[] = [];
+	private todoList = new TodoList();
 
 	/** Reports working, blocked, done, and error states to terminals that support OSC 7501. */
 	private readonly programStatus = new ProgramStatusReporter(
@@ -7116,15 +7117,10 @@ export class InteractiveMode {
 
 	private handleTodoCommand(text?: string): void {
 		if (text) {
-			this.todoItems.push(text);
+			this.todoList.add(text);
 			this.showStatus(`Added todo: ${text}`);
 		} else {
-			if (this.todoItems.length === 0) {
-				this.showStatus("No todo items");
-			} else {
-				const todoList = this.todoItems.map((item, i) => `${i + 1}. ${item}`).join("\n");
-				this.showStatus(`Todo items:\n${todoList}`);
-			}
+			this.showStatus(`Todo items:\n${this.todoList.format()}`);
 		}
 	}
 
