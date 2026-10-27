@@ -116,6 +116,7 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
+import { TodoManager } from "../../core/todo-manager.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
@@ -543,6 +544,9 @@ export class InteractiveMode {
 
 	// Messages queued while compaction is running
 	private compactionQueuedMessages: CompactionQueuedMessage[] = [];
+
+	// Todo list for the session
+	private todoManager = new TodoManager();
 
 	// Shutdown state
 	private shutdownRequested = false;
@@ -3312,6 +3316,12 @@ export class InteractiveMode {
 				const customInstructions = text.startsWith("/compact ") ? text.slice(9).trim() : undefined;
 				this.editor.setText("");
 				await this.handleCompactCommand(customInstructions);
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : "";
+				this.handleTodoCommand(todoText);
+				this.editor.setText("");
 				return;
 			}
 			if (text === "/reload") {
@@ -7102,6 +7112,25 @@ export class InteractiveMode {
 			await this.session.compact(customInstructions);
 		} catch {
 			// Ignore, will be emitted as an event
+		}
+	}
+
+	private handleTodoCommand(text: string): void {
+		if (text === "") {
+			// List todos
+			const items = this.todoManager.getItems();
+			if (items.length === 0) {
+				this.ui.terminal.writeLine("No todo items.");
+			} else {
+				this.ui.terminal.writeLine("Todo items:");
+				items.forEach((item, index) => {
+					this.ui.terminal.writeLine(`  ${index + 1}. ${item}`);
+				});
+			}
+		} else {
+			// Add todo
+			this.todoManager.add(text);
+			this.ui.terminal.writeLine(`Added: ${text}`);
 		}
 	}
 
