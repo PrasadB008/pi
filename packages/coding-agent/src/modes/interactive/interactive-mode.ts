@@ -115,6 +115,7 @@ import {
 } from "../../core/session-manager.ts";
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
+import { TodoList } from "../../core/todo-list.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
@@ -543,7 +544,7 @@ export class InteractiveMode {
 
 	// Messages queued while compaction is running
 	private compactionQueuedMessages: CompactionQueuedMessage[] = [];
-	private todoItems: string[] = [];
+	private todoList = new TodoList();
 
 	// Shutdown state
 	private shutdownRequested = false;
@@ -6714,22 +6715,20 @@ export class InteractiveMode {
 		this.ui.requestRender();
 	}
 
-	private handleTodoCommand(item: string): void {
-		if (item) {
-			this.todoItems.push(item);
+	private handleTodoCommand(text: string): void {
+		if (text) {
+			const position = this.todoList.add(text);
 			this.chatContainer.addChild(new Spacer(1));
-			this.chatContainer.addChild(
-				new ThemedText(() => theme.fg("dim", `Todo added (#${this.todoItems.length}): ${item}`), 1, 0),
-			);
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Todo added (#${position}): ${text}`), 1, 0));
 			this.ui.requestRender();
 			return;
 		}
 
-		if (this.todoItems.length === 0) {
+		const items = this.todoList.list();
+		if (items.length === 0) {
 			this.showStatus("No todo items. Add one with /todo <text>");
 			return;
 		}
-		const items = [...this.todoItems];
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(
 			new ThemedText(
