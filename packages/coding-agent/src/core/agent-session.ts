@@ -448,6 +448,7 @@ export class AgentSession {
 	private _pendingToolNames = new Set<string>();
 	private _usesDefaultTools: boolean;
 	private _defaultToolModifiers: string[];
+	private _todoItems: string[] = [];
 	/** Matches the `--tools` entries: tool names or patterns. */
 	private _allowedTools?: (name: string) => boolean;
 	/**
@@ -2149,6 +2150,12 @@ export class AgentSession {
 		const commandName = spaceIndex === -1 ? text.slice(1) : text.slice(1, spaceIndex);
 		const args = spaceIndex === -1 ? "" : text.slice(spaceIndex + 1);
 
+		// Handle built-in /todo command
+		if (commandName === "todo") {
+			this._handleTodoCommand(args);
+			return true;
+		}
+
 		const command = this._extensionRunner.getCommand(commandName);
 		if (!command) return false;
 
@@ -2166,6 +2173,32 @@ export class AgentSession {
 				error: err instanceof Error ? err.message : String(err),
 			});
 			return true;
+		}
+	}
+
+	private _handleTodoCommand(args: string): void {
+		const text = args.trim();
+		if (text) {
+			// Add item to todo list
+			this._todoItems.push(text);
+			this._extensionRunner.sendMessage({
+				role: "assistant",
+				content: `Added to todo: ${text}`,
+			});
+		} else {
+			// List all todo items
+			if (this._todoItems.length === 0) {
+				this._extensionRunner.sendMessage({
+					role: "assistant",
+					content: "No todo items.",
+				});
+			} else {
+				const list = this._todoItems.map((item, i) => `${i + 1}. ${item}`).join("\n");
+				this._extensionRunner.sendMessage({
+					role: "assistant",
+					content: `Todo items:\n${list}`,
+				});
+			}
 		}
 	}
 

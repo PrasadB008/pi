@@ -4789,6 +4789,12 @@ export class InteractiveMode {
 
 		const spaceIndex = text.indexOf(" ");
 		const commandName = spaceIndex === -1 ? text.slice(1) : text.slice(1, spaceIndex);
+		
+		// Check if it's a built-in command
+		if (BUILTIN_SLASH_COMMANDS.some((cmd) => cmd.name === commandName)) {
+			return true;
+		}
+		
 		return !!extensionRunner.getCommand(commandName);
 	}
 
