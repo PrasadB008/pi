@@ -400,6 +400,9 @@ export class AgentSession {
 	/** Context-only custom messages queued during a run, flushed once the current turn's tool results are in. */
 	private _pendingCustomMessages: CustomMessage[] = [];
 
+	// Todo list state
+	private _todoItems: string[] = [];
+
 	// Compaction state
 	private _compactionAbortController: AbortController | undefined = undefined;
 	private _autoCompactionAbortController: AbortController | undefined = undefined;
@@ -4307,6 +4310,18 @@ export class AgentSession {
 			contextWindow,
 			percent,
 		};
+	}
+
+	addTodoItem(text: string): void {
+		this._todoItems.push(text);
+	}
+
+	getTodoItems(): string[] {
+		return [...this._todoItems];
+	}
+
+	clearTodoItems(): void {
+		this._todoItems = [];
 	}
 
 	/**

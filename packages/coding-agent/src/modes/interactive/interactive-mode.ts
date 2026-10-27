@@ -3344,6 +3344,11 @@ export class InteractiveMode {
 				await this.shutdown();
 				return;
 			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
+				this.editor.setText("");
+				return;
+			}
 
 			// Handle bash command (! for normal, !! for excluded from context)
 			if (text.startsWith("!")) {
@@ -6986,6 +6991,34 @@ export class InteractiveMode {
 		this.chatContainer.addChild(
 			new ThemedText(() => `${theme.fg("accent", "✓ Debug log written")}\n${theme.fg("muted", debugLogPath)}`, 1, 1),
 		);
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		const todoText = text.slice(6).trim(); // Remove "/todo " prefix
+
+		if (todoText) {
+			// Add item to todo list
+			this.session.addTodoItem(todoText);
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(
+				new ThemedText(() => `${theme.fg("accent", "✓ Added to todo")}: ${todoText}`, 1, 1),
+			);
+		} else {
+			// List all todo items
+			const items = this.session.getTodoItems();
+			this.chatContainer.addChild(new Spacer(1));
+			if (items.length === 0) {
+				this.chatContainer.addChild(
+					new ThemedText(() => theme.fg("muted", "No todo items"), 1, 1),
+				);
+			} else {
+				const todoList = items.map((item, idx) => `${idx + 1}. ${item}`).join("\n");
+				this.chatContainer.addChild(
+					new ThemedText(() => `${theme.fg("accent", "Todo list")}:\n${todoList}`, 1, 1),
+				);
+			}
+		}
 		this.ui.requestRender();
 	}
 
