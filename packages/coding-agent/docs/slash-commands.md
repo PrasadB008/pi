@@ -49,6 +49,7 @@ Review a session before exporting or sharing it. Sessions can contain prompts, t
 | `/reload` | Reload keybindings, extensions, skills, templates, themes, and context files |
 | `/hotkeys` | Show active keyboard shortcuts |
 | `/changelog` | Show changelog entries |
+| `/todos` | List TODO and FIXME comments in the project, grouped by file (requires a git repository; shows the first 200 matches) |
 | `/quit` | Quit Pi |
 
 ## Commands added by resources
