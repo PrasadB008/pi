@@ -116,8 +116,8 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
-import { TodoList } from "../../core/todo-list.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
+import { TodoList } from "../../core/todo-list.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
@@ -7024,11 +7024,7 @@ export class InteractiveMode {
 			if (todoText) {
 				this.todoList.add(todoText);
 				this.chatContainer.addChild(
-					new ThemedText(
-						() => `${theme.fg("accent", "✓ Added to todo")}: ${todoText}`,
-						1,
-						1,
-					),
+					new ThemedText(() => `${theme.fg("accent", "✓ Added to todo")}: ${todoText}`, 1, 1),
 				);
 			}
 		}
