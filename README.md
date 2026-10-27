@@ -200,7 +200,9 @@ I regularly publish my own `pi-mono` work sessions here:
 MIT
 
 <p align="center">
-  <a href="https://pi.dev">pi.dev</a> domain graciously donated by
-  <br /><br />
-  <a href="https://exe.dev"><img src="packages/coding-agent/docs/images/exy.png" alt="Exy mascot" width="48" /><br />exe.dev</a>
+   <a href="https://pi.dev">pi.dev</a> domain graciously donated by
+   <br /><br />
+   <a href="https://exe.dev"><img src="packages/coding-agent/docs/images/exy.png" alt="Exy mascot" width="48" /><br />exe.dev</a>
 </p>
+
+Forge eval test line.
