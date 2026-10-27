@@ -1,6 +1,4 @@
-export type TodoCommandResult =
-	| { kind: "list"; items: string[] }
-	| { kind: "added"; items: string[]; added: string };
+export type TodoCommandResult = { kind: "list"; items: string[] } | { kind: "added"; items: string[]; added: string };
 
 /**
  * Apply a `/todo` command to a todo list.
