@@ -116,6 +116,7 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
+import { TodoStore } from "../../core/todo-store.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
@@ -543,6 +544,9 @@ export class InteractiveMode {
 
 	// Messages queued while compaction is running
 	private compactionQueuedMessages: CompactionQueuedMessage[] = [];
+
+	// Todo store for session todo items
+	private todoStore = new TodoStore();
 
 	// Shutdown state
 	private shutdownRequested = false;
@@ -3336,6 +3340,12 @@ export class InteractiveMode {
 			}
 			if (text === "/resume") {
 				this.showSessionSelector();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : undefined;
+				this.handleTodoCommand(todoText);
 				this.editor.setText("");
 				return;
 			}
@@ -7102,6 +7112,23 @@ export class InteractiveMode {
 			await this.session.compact(customInstructions);
 		} catch {
 			// Ignore, will be emitted as an event
+		}
+	}
+
+	private handleTodoCommand(text?: string): void {
+		if (text) {
+			// Add item to todo list
+			this.todoStore.addItem(text);
+			this.addSystemMessage(`Added to todo: ${text}`);
+		} else {
+			// List all todo items
+			const items = this.todoStore.getItems();
+			if (items.length === 0) {
+				this.addSystemMessage("No todo items.");
+			} else {
+				const itemsList = items.map((item, i) => `${i + 1}. ${item.text}`).join("\n");
+				this.addSystemMessage(`Todo items:\n${itemsList}`);
+			}
 		}
 	}
 
