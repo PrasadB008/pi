@@ -186,6 +186,7 @@ import { refreshModelCatalogs } from "./model-catalog-refresh.ts";
 import { getModelSearchText } from "./model-search.ts";
 import { type BlockedStatus, ProgramStatusReporter } from "./program-status-reporter.ts";
 import { shareSession } from "./session-share.ts";
+import { parseTodoCommand, TodoList } from "./todo-list.ts";
 import {
 	getAvailableThemes,
 	getAvailableThemesWithPaths,
@@ -534,6 +535,7 @@ export class InteractiveMode {
 
 	// Track pending bash components (shown in pending area, moved to chat on submit)
 	private pendingBashComponents: BashExecutionComponent[] = [];
+	private todoList = new TodoList();
 
 	// Auto-compaction state
 	private autoCompactionEscapeHandler?: () => void;
@@ -3259,6 +3261,11 @@ export class InteractiveMode {
 			}
 			if (text === "/session") {
 				this.handleSessionCommand();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6786,6 +6793,28 @@ export class InteractiveMode {
 
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new ThemedText(renderInfo, 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		const itemText = parseTodoCommand(text);
+		if (itemText) {
+			const item = this.todoList.add(itemText);
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Todo added: ${item}`), 1, 0));
+			this.ui.requestRender();
+			return;
+		}
+
+		const items = this.todoList.list();
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(
+			new ThemedText(() => {
+				if (items.length === 0) return theme.fg("dim", "No todos. Add one with /todo <text>");
+				const lines = items.map((item, index) => `${theme.fg("dim", `${index + 1}.`)} ${item}`);
+				return `${theme.bold("Todos")}\n\n${lines.join("\n")}`;
+			}, 1, 0),
+		);
 		this.ui.requestRender();
 	}
 
