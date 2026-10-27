@@ -498,6 +498,7 @@ export class InteractiveMode {
 	private lastStatusSpacer: Spacer | undefined = undefined;
 	private lastStatusText: ThemedText | undefined = undefined;
 	private lastStatusMessage = "";
+	private todoItems: string[] = [];
 	private managedToolStatusStarted = false;
 
 	// Streaming message tracking
@@ -3259,6 +3260,11 @@ export class InteractiveMode {
 			}
 			if (text === "/session") {
 				this.handleSessionCommand();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text.slice("/todo".length).trim());
 				this.editor.setText("");
 				return;
 			}
@@ -6705,6 +6711,22 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(item: string): void {
+		if (item) {
+			this.todoItems.push(item);
+			this.showStatus(`Todo added (${this.todoItems.length}): ${item}`);
+			return;
+		}
+		if (this.todoItems.length === 0) {
+			this.showStatus("No todo items. Add one with /todo <text>");
+			return;
+		}
+		const lines = this.todoItems.map((todo, index) => `${index + 1}. ${todo}`);
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Todo:\n${lines.join("\n")}`), 1, 0));
 		this.ui.requestRender();
 	}
 
