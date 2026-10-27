@@ -4,6 +4,8 @@
 
 ### Added
 
+- Added the `/todo` slash command in interactive mode: `/todo <text>` adds an item to an in-memory todo list and `/todo` alone lists the items
+
 - Added a Models Configuration reference generated from the `models.json` schema, listing all provider, model, model override, and compatibility fields ([#10790](https://github.com/earendil-works/pi/issues/10790))
 
 ### Changed
