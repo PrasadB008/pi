@@ -117,6 +117,7 @@ import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
+import { TodoList } from "../../core/todo-list.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
@@ -545,7 +546,7 @@ export class InteractiveMode {
 	private compactionQueuedMessages: CompactionQueuedMessage[] = [];
 
 	// Todo list for the session
-	private todoItems: string[] = [];
+	private todoList = new TodoList();
 
 	// Shutdown state
 	private shutdownRequested = false;
@@ -6822,18 +6823,19 @@ export class InteractiveMode {
 	private handleTodoCommand(text: string | undefined): void {
 		if (text) {
 			// Add item to todo list
-			this.todoItems.push(text);
+			this.todoList.add(text);
 			this.chatContainer.addChild(new Spacer(1));
 			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Added to todo: ${text}`), 1, 0));
 		} else {
 			// List all todo items
 			this.chatContainer.addChild(new Spacer(1));
-			if (this.todoItems.length === 0) {
+			const items = this.todoList.getItems();
+			if (items.length === 0) {
 				this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", "No todo items"), 1, 0));
 			} else {
 				this.chatContainer.addChild(new ThemedText(() => theme.bold("Todo List"), 1, 0));
 				this.chatContainer.addChild(new Spacer(1));
-				this.todoItems.forEach((item, index) => {
+				items.forEach((item, index) => {
 					this.chatContainer.addChild(
 						new ThemedText(() => theme.fg("dim", `${index + 1}. ${item}`), 1, 0),
 					);
