@@ -117,6 +117,7 @@ import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
+import { groupTodosByFile, scanTodos } from "../../core/todos.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
@@ -3265,6 +3266,11 @@ export class InteractiveMode {
 			if (text === "/changelog") {
 				this.handleChangelogCommand();
 				this.editor.setText("");
+				return;
+			}
+			if (text === "/todos") {
+				this.editor.setText("");
+				await this.handleTodosCommand();
 				return;
 			}
 			if (text === "/hotkeys") {
@@ -6806,6 +6812,37 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new ThemedText(() => theme.bold(theme.fg("accent", "What's New")), 1, 0));
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new Markdown(changelogMarkdown, 1, 1, this.getMarkdownThemeWithSettings()));
+		this.chatContainer.addChild(new DynamicBorder());
+		this.ui.requestRender();
+	}
+
+	private async handleTodosCommand(): Promise<void> {
+		const { items, error } = await scanTodos(this.sessionManager.getCwd());
+		const groups = groupTodosByFile(items);
+
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new DynamicBorder());
+		const heading = error ? "TODOs" : `TODOs (${items.length} in ${groups.size} files)`;
+		this.chatContainer.addChild(new ThemedText(() => theme.bold(theme.fg("accent", heading)), 1, 0));
+		this.chatContainer.addChild(new Spacer(1));
+		if (error) {
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("error", error), 1, 0));
+		} else if (items.length === 0) {
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", "No TODO or FIXME comments found."), 1, 0));
+		} else {
+			const renderList = (): string => {
+				const lines: string[] = [];
+				for (const [file, fileItems] of groups) {
+					lines.push(theme.bold(file));
+					for (const item of fileItems) {
+						lines.push(`  ${theme.fg("dim", `${item.line}:`)} ${item.text}`);
+					}
+					lines.push("");
+				}
+				return lines.join("\n").trimEnd();
+			};
+			this.chatContainer.addChild(new ThemedText(renderList, 1, 0));
+		}
 		this.chatContainer.addChild(new DynamicBorder());
 		this.ui.requestRender();
 	}
