@@ -115,6 +115,7 @@ import {
 } from "../../core/session-manager.ts";
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
+import { TodoList } from "../../core/todo-list.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
@@ -546,6 +547,9 @@ export class InteractiveMode {
 
 	// Shutdown state
 	private shutdownRequested = false;
+
+	// Todo list for the session
+	private todoList = new TodoList();
 
 	/** Reports working, blocked, done, and error states to terminals that support OSC 7501. */
 	private readonly programStatus = new ProgramStatusReporter(
@@ -3336,6 +3340,25 @@ export class InteractiveMode {
 			}
 			if (text === "/resume") {
 				this.showSessionSelector();
+				this.editor.setText("");
+				return;
+			}
+			if (text.startsWith("/todo")) {
+				const arg = text.slice(5).trim();
+				if (arg) {
+					// Add item to todo list
+					this.todoList.add(arg);
+					this.showInfo(`Added to todo: ${arg}`);
+				} else {
+					// List all items
+					const items = this.todoList.getItems();
+					if (items.length === 0) {
+						this.showInfo("Todo list is empty.");
+					} else {
+						const formatted = items.map((item, index) => `${index + 1}. ${item}`).join("\n");
+						this.showInfo(`Todo list:\n${formatted}`);
+					}
+				}
 				this.editor.setText("");
 				return;
 			}
