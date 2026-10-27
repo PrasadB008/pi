@@ -3260,7 +3260,7 @@ export class InteractiveMode {
 				return;
 			}
 			if (text === "/todo" || text.startsWith("/todo ")) {
-				this.handleTodoCommand(text);
+				this.handleTodoCommand(text.slice("/todo".length).trim());
 				this.editor.setText("");
 				return;
 			}
@@ -6690,26 +6690,6 @@ export class InteractiveMode {
 		}
 	}
 
-	private handleTodoCommand(text: string): void {
-		const sessionId = this.sessionManager.getSessionId();
-		let todos = this.todosBySession.get(sessionId);
-		if (!todos) {
-			todos = new TodoList();
-			this.todosBySession.set(sessionId, todos);
-		}
-		const item = text.replace(/^\/todo\s*/, "").trim();
-		let message: string;
-		if (item) {
-			todos.add(item);
-			message = `Todo added (${todos.items.length}): ${item}`;
-		} else {
-			message = todos.format();
-		}
-		this.chatContainer.addChild(new Spacer(1));
-		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", message), 1, 0));
-		this.ui.requestRender();
-	}
-
 	private handleNameCommand(text: string): void {
 		const name = text.replace(/^\/name\s*/, "").trim();
 		if (!name) {
@@ -6732,6 +6712,38 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(item: string): void {
+		const sessionId = this.sessionManager.getSessionId();
+		let todos = this.todosBySession.get(sessionId);
+		if (!todos) {
+			todos = new TodoList();
+			this.todosBySession.set(sessionId, todos);
+		}
+		if (item) {
+			todos.add(item);
+			const count = todos.items.length;
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Todo added (#${count}): ${item}`), 1, 0));
+			this.ui.requestRender();
+			return;
+		}
+
+		if (todos.items.length === 0) {
+			this.showStatus("No todo items. Add one with /todo <text>");
+			return;
+		}
+		const items = [...todos.items];
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(
+			new ThemedText(
+				() => `${theme.bold("Todo")}\n${items.map((entry, i) => `${theme.fg("dim", `${i + 1}.`)} ${entry}`).join("\n")}`,
+				1,
+				0,
+			),
+		);
 		this.ui.requestRender();
 	}
 
