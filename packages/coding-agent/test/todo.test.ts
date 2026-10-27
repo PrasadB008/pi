@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 // Simple test for the todo functionality without requiring the full harness
 describe("Todo list management", () => {
