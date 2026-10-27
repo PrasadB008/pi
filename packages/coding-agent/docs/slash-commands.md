@@ -49,6 +49,7 @@ Review a session before exporting or sharing it. Sessions can contain prompts, t
 | `/reload` | Reload keybindings, extensions, skills, templates, themes, and context files |
 | `/hotkeys` | Show active keyboard shortcuts |
 | `/changelog` | Show changelog entries |
+| `/todo [text]` | Add a todo item to the session's in-memory list, or list items when no text is given |
 | `/quit` | Quit Pi |
 
 ## Commands added by resources
