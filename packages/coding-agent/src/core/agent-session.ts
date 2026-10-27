@@ -469,6 +469,9 @@ export class AgentSession {
 	private _modelRuntime: ModelRuntime;
 	private _cacheWarmer?: Pick<CacheWarmer, "cancel" | "status" | "onAgentSettled" | "onModeChanged" | "onWarmed">;
 
+	// Todo list for the session
+	private _todoItems: string[] = [];
+
 	// Tool registry for extension getTools/setTools
 	private _toolRegistry: Map<string, AgentTool> = new Map();
 	/** Created on the first `ctx.executeTool()` call. */
@@ -4424,5 +4427,30 @@ export class AgentSession {
 	 */
 	get extensionRunner(): ExtensionRunner {
 		return this._extensionRunner;
+	}
+
+	// =========================================================================
+	// Todo Management
+	// =========================================================================
+
+	/**
+	 * Add an item to the todo list.
+	 */
+	addTodoItem(item: string): void {
+		this._todoItems.push(item);
+	}
+
+	/**
+	 * Get all todo items.
+	 */
+	getTodoItems(): string[] {
+		return [...this._todoItems];
+	}
+
+	/**
+	 * Clear all todo items.
+	 */
+	clearTodoItems(): void {
+		this._todoItems = [];
 	}
 }

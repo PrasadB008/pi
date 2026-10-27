@@ -3345,6 +3345,28 @@ export class InteractiveMode {
 				return;
 			}
 
+			// Handle /todo command
+			if (text === "/todo") {
+				const items = this.session.getTodoItems();
+				if (items.length === 0) {
+					this.showInfo("No todo items.");
+				} else {
+					const list = items.map((item, i) => `${i + 1}. ${item}`).join("\n");
+					this.showInfo(`Todo list:\n${list}`);
+				}
+				this.editor.setText("");
+				return;
+			}
+			if (text.startsWith("/todo ")) {
+				const item = text.slice(6).trim();
+				if (item) {
+					this.session.addTodoItem(item);
+					this.showInfo(`Added to todo: ${item}`);
+				}
+				this.editor.setText("");
+				return;
+			}
+
 			// Handle bash command (! for normal, !! for excluded from context)
 			if (text.startsWith("!")) {
 				const isExcluded = text.startsWith("!!");
