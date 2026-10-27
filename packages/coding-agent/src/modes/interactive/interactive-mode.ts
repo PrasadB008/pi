@@ -115,6 +115,7 @@ import {
 } from "../../core/session-manager.ts";
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
+import { runTodoCommand } from "../../core/todo-command.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
@@ -534,6 +535,7 @@ export class InteractiveMode {
 
 	// Track pending bash components (shown in pending area, moved to chat on submit)
 	private pendingBashComponents: BashExecutionComponent[] = [];
+	private todoItems: string[] = [];
 
 	// Auto-compaction state
 	private autoCompactionEscapeHandler?: () => void;
@@ -3254,6 +3256,11 @@ export class InteractiveMode {
 			}
 			if (text === "/name" || text.startsWith("/name ")) {
 				this.handleNameCommand(text);
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6681,6 +6688,21 @@ export class InteractiveMode {
 		} catch (error) {
 			this.showError(error instanceof Error ? error.message : String(error));
 		}
+	}
+
+	private handleTodoCommand(text: string): void {
+		const result = runTodoCommand(text, this.todoItems);
+		this.todoItems = [...result.items];
+		this.chatContainer.addChild(new Spacer(1));
+		if (result.kind === "added") {
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Todo added: ${result.added}`), 1, 0));
+		} else if (result.items.length === 0) {
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", "No todo items. Use /todo <text> to add one."), 1, 0));
+		} else {
+			const lines = result.items.map((item, index) => `${index + 1}. ${item}`).join("\n");
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Todo:\n${lines}`), 1, 0));
+		}
+		this.ui.requestRender();
 	}
 
 	private handleNameCommand(text: string): void {
