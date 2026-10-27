@@ -7004,9 +7004,7 @@ export class InteractiveMode {
 		if (text) {
 			// Add to todo list
 			this.todoItems.push(text);
-			this.chatContainer.addChild(
-				new ThemedText(() => `${theme.fg("accent", "✓ Added to todo")}: ${text}`, 1, 1),
-			);
+			this.chatContainer.addChild(new ThemedText(() => `${theme.fg("accent", "✓ Added to todo")}: ${text}`, 1, 1));
 		} else {
 			// List todo items
 			if (this.todoItems.length === 0) {
