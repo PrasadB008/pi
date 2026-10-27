@@ -116,6 +116,7 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
+import { TodoList } from "../../core/todo-list.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
@@ -449,6 +450,7 @@ export interface InteractiveModeOptions {
 }
 
 export class InteractiveMode {
+	private todoList = new TodoList();
 	private runtimeHost: AgentSessionRuntime;
 	private renderer: TuiMainScreen | TuiAltScreen;
 	private ui: TUI;
@@ -3254,6 +3256,11 @@ export class InteractiveMode {
 			}
 			if (text === "/name" || text.startsWith("/name ")) {
 				this.handleNameCommand(text);
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6705,6 +6712,23 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		const item = text.replace(/^\/todo\s*/, "").trim();
+		this.chatContainer.addChild(new Spacer(1));
+		if (item) {
+			this.todoList.add(item);
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Todo added: ${item}`), 1, 0));
+		} else {
+			const items = this.todoList.list();
+			const message =
+				items.length === 0
+					? "No todo items. Use /todo <text> to add one."
+					: items.map((entry, index) => `${index + 1}. ${entry}`).join("\n");
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", message), 1, 0));
+		}
 		this.ui.requestRender();
 	}
 
