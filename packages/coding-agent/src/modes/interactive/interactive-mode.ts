@@ -186,6 +186,7 @@ import { refreshModelCatalogs } from "./model-catalog-refresh.ts";
 import { getModelSearchText } from "./model-search.ts";
 import { type BlockedStatus, ProgramStatusReporter } from "./program-status-reporter.ts";
 import { shareSession } from "./session-share.ts";
+import { TodoList } from "./todo-list.ts";
 import {
 	getAvailableThemes,
 	getAvailableThemesWithPaths,
@@ -455,6 +456,7 @@ export class InteractiveMode {
 	private mainScreenRenderState: TuiMainScreenRenderState | undefined;
 	private loadedResourcesContainer: Container;
 	private chatContainer: Container;
+	private todoList = new TodoList();
 	private documentContainer: Container;
 	private transcriptScrollView: TuiLayouts.ScrollView | undefined;
 	private fullscreenLayoutRoot: Component | undefined;
@@ -3254,6 +3256,11 @@ export class InteractiveMode {
 			}
 			if (text === "/name" || text.startsWith("/name ")) {
 				this.handleNameCommand(text);
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6705,6 +6712,25 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		const argument = text.replace(/^\/todo\s*/, "");
+		this.chatContainer.addChild(new Spacer(1));
+		if (argument.trim()) {
+			const item = this.todoList.add(argument);
+			this.chatContainer.addChild(
+				new ThemedText(() => theme.fg("dim", `Todo added (${this.todoList.list().length}): ${item}`), 1, 0),
+			);
+		} else {
+			const items = this.todoList.list();
+			const body =
+				items.length === 0
+					? "No todos. Use /todo <text> to add one."
+					: ["Todos:", ...items.map((item, index) => `${index + 1}. ${item}`)].join("\n");
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", body), 1, 0));
+		}
 		this.ui.requestRender();
 	}
 
