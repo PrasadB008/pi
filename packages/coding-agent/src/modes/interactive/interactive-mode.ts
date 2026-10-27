@@ -116,8 +116,8 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
-import { parseTodoCommand, TodoList } from "../../core/todo-list.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
+import { parseTodoCommand, TodoList } from "../../core/todo-list.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
@@ -6724,7 +6724,9 @@ export class InteractiveMode {
 		} else {
 			const items = this.todoList.list();
 			const body =
-				items.length === 0 ? "No todo items. Use /todo <text> to add one." : items.map((item, i) => `${i + 1}. ${item}`).join("\n");
+				items.length === 0
+					? "No todo items. Use /todo <text> to add one."
+					: items.map((item, i) => `${i + 1}. ${item}`).join("\n");
 			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Todo:\n${body}`), 1, 0));
 		}
 		this.ui.requestRender();
