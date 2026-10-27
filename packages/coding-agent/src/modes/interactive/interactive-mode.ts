@@ -455,6 +455,7 @@ export class InteractiveMode {
 	private mainScreenRenderState: TuiMainScreenRenderState | undefined;
 	private loadedResourcesContainer: Container;
 	private chatContainer: Container;
+	private todoItems: string[] = [];
 	private documentContainer: Container;
 	private transcriptScrollView: TuiLayouts.ScrollView | undefined;
 	private fullscreenLayoutRoot: Component | undefined;
@@ -3259,6 +3260,11 @@ export class InteractiveMode {
 			}
 			if (text === "/session") {
 				this.handleSessionCommand();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6705,6 +6711,23 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		const item = text.replace(/^\/todo\s*/, "").trim();
+		this.chatContainer.addChild(new Spacer(1));
+		if (item) {
+			this.todoItems.push(item);
+			this.chatContainer.addChild(
+				new ThemedText(() => theme.fg("dim", `Todo added (${this.todoItems.length}): ${item}`), 1, 0),
+			);
+		} else if (this.todoItems.length === 0) {
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", "No todo items. Usage: /todo <text>"), 1, 0));
+		} else {
+			const lines = this.todoItems.map((todo, index) => `${index + 1}. ${todo}`).join("\n");
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Todo:\n${lines}`), 1, 0));
+		}
 		this.ui.requestRender();
 	}
 
