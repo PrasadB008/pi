@@ -116,6 +116,7 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
+import { TodoList } from "../../core/todo-list.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
@@ -521,6 +522,9 @@ export class InteractiveMode {
 
 	// Skill commands: command name -> skill file path
 	private skillCommands = new Map<string, string>();
+
+	// Todo list for the session
+	private todoList = new TodoList();
 
 	// Agent subscription unsubscribe function
 	private unsubscribe?: () => void;
@@ -3342,6 +3346,12 @@ export class InteractiveMode {
 			if (text === "/quit") {
 				this.editor.setText("");
 				await this.shutdown();
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : undefined;
+				this.editor.setText("");
+				this.handleTodoCommand(todoText);
 				return;
 			}
 
@@ -7102,6 +7112,23 @@ export class InteractiveMode {
 			await this.session.compact(customInstructions);
 		} catch {
 			// Ignore, will be emitted as an event
+		}
+	}
+
+	private handleTodoCommand(text?: string): void {
+		if (text) {
+			// Add a new todo item
+			this.todoList.add(text);
+			this.showStatus(`Added todo: ${text}`);
+		} else {
+			// List all todo items
+			const items = this.todoList.getAll();
+			if (items.length === 0) {
+				this.showStatus("No todos yet. Use /todo <text> to add one.");
+			} else {
+				const list = items.map((item, index) => `${index + 1}. ${item.text}`).join("\n");
+				this.showStatus(`Todos:\n${list}`);
+			}
 		}
 	}
 
