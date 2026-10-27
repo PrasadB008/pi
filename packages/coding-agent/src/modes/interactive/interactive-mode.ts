@@ -116,6 +116,7 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
+import { TodoList } from "../../core/todo-list.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
@@ -556,6 +557,7 @@ export class InteractiveMode {
 	/** The `/bug` hint is shown at most once per session so error output stays readable. */
 	private bugReportHintShown = false;
 	private installChangeWarningShown = false;
+	private readonly todoList = new TodoList();
 
 	// Extension UI state
 	private extensionSelector: ExtensionSelectorComponent | undefined = undefined;
@@ -3317,6 +3319,12 @@ export class InteractiveMode {
 			if (text === "/reload") {
 				this.editor.setText("");
 				await this.handleReloadCommand();
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : undefined;
+				this.editor.setText("");
+				this.handleTodoCommand(todoText);
 				return;
 			}
 			if (text === "/debug") {
@@ -6986,6 +6994,31 @@ export class InteractiveMode {
 		this.chatContainer.addChild(
 			new ThemedText(() => `${theme.fg("accent", "✓ Debug log written")}\n${theme.fg("muted", debugLogPath)}`, 1, 1),
 		);
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text?: string): void {
+		this.chatContainer.addChild(new Spacer(1));
+
+		if (text) {
+			this.todoList.add(text);
+			this.chatContainer.addChild(
+				new ThemedText(() => theme.fg("accent", `✓ Added: ${text}`), 1, 1),
+			);
+		} else {
+			const items = this.todoList.list();
+			if (items.length === 0) {
+				this.chatContainer.addChild(
+					new ThemedText(() => theme.fg("muted", "No todo items."), 1, 1),
+				);
+			} else {
+				const todoText = items.map((item, idx) => `${idx + 1}. ${item}`).join("\n");
+				this.chatContainer.addChild(
+					new ThemedText(() => todoText, 1, 1),
+				);
+			}
+		}
+
 		this.ui.requestRender();
 	}
 
