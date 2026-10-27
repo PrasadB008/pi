@@ -116,6 +116,7 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
+import { TodoList } from "../../core/todo-list.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
@@ -534,7 +535,7 @@ export class InteractiveMode {
 
 	// Track pending bash components (shown in pending area, moved to chat on submit)
 	private pendingBashComponents: BashExecutionComponent[] = [];
-	private todoItems: string[] = [];
+	private todoList = new TodoList();
 
 	// Auto-compaction state
 	private autoCompactionEscapeHandler?: () => void;
@@ -6715,17 +6716,14 @@ export class InteractiveMode {
 	}
 
 	private handleTodoCommand(text: string): void {
-		const item = text.replace(/^\/todo\s*/, "").trim();
-		if (item) {
-			this.todoItems.push(item);
-		}
+		const item = this.todoList.add(text.replace(/^\/todo\s*/, ""));
 		this.chatContainer.addChild(new Spacer(1));
 		if (item) {
 			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Todo added: ${item}`), 1, 0));
-		} else if (this.todoItems.length === 0) {
+		} else if (this.todoList.list().length === 0) {
 			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", "No todo items. Usage: /todo <text>"), 1, 0));
 		} else {
-			const lines = this.todoItems.map((todo, index) => `${index + 1}. ${todo}`);
+			const lines = this.todoList.format();
 			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Todo list:\n${lines.join("\n")}`), 1, 0));
 		}
 		this.ui.requestRender();
