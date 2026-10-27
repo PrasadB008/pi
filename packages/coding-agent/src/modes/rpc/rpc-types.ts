@@ -47,6 +47,9 @@ export type RpcCommand =
 	| { id?: string; type: "compact"; customInstructions?: string }
 	| { id?: string; type: "set_auto_compaction"; enabled: boolean }
 
+	// Todo
+	| { id?: string; type: "todo"; text?: string }
+
 	// Retry
 	| { id?: string; type: "set_auto_retry"; enabled: boolean }
 	| { id?: string; type: "abort_retry" }
@@ -184,6 +187,9 @@ export type RpcResponse =
 	// Compaction
 	| { id?: string; type: "response"; command: "compact"; success: true; data: CompactionResult }
 	| { id?: string; type: "response"; command: "set_auto_compaction"; success: true }
+
+	// Todo
+	| { id?: string; type: "response"; command: "todo"; success: true; data: { added?: string; todos: string[] } }
 
 	// Retry
 	| { id?: string; type: "response"; command: "set_auto_retry"; success: true }
