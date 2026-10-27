@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { formatTodoList, TodoList } from "../src/core/todo-list.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../src/core/slash-commands.ts";
+import { formatTodoList, TodoList } from "../src/core/todo-list.ts";
 
 describe("TodoList", () => {
 	it("adds trimmed items in order and returns their 1-based position", () => {
