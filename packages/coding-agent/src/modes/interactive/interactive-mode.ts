@@ -6723,7 +6723,8 @@ export class InteractiveMode {
 			message = `Todo added: ${number}. ${argument}`;
 		} else {
 			const items = this.todoList.list();
-			message = items.length > 0 ? `Todo list:\n${formatTodoList(items)}` : "No todo items. Use /todo <text> to add one.";
+			message =
+				items.length > 0 ? `Todo list:\n${formatTodoList(items)}` : "No todo items. Use /todo <text> to add one.";
 		}
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", message), 1, 0));
