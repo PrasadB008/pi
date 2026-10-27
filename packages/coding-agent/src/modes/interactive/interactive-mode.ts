@@ -544,6 +544,9 @@ export class InteractiveMode {
 	// Messages queued while compaction is running
 	private compactionQueuedMessages: CompactionQueuedMessage[] = [];
 
+	// Todo list for the session
+	private todoItems: string[] = [];
+
 	// Shutdown state
 	private shutdownRequested = false;
 
@@ -3336,6 +3339,11 @@ export class InteractiveMode {
 			}
 			if (text === "/resume") {
 				this.showSessionSelector();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6580,6 +6588,29 @@ export class InteractiveMode {
 			return argsString;
 		}
 		return argsString.slice(0, firstWhitespaceIndex);
+	}
+
+	private handleTodoCommand(text: string): void {
+		if (text === "/todo") {
+			// List all todo items
+			if (this.todoItems.length === 0) {
+				this.showStatus("No todo items.");
+				return;
+			}
+			const todoList = this.todoItems
+				.map((item, index) => `${index + 1}. ${item}`)
+				.join("\n");
+			this.showStatus(`Todo items:\n${todoList}`);
+		} else if (text.startsWith("/todo ")) {
+			// Add a new todo item
+			const item = text.slice(6).trim();
+			if (item) {
+				this.todoItems.push(item);
+				this.showStatus(`Added: ${item}`);
+			} else {
+				this.showError("Usage: /todo <text>");
+			}
+		}
 	}
 
 	private async handleImportCommand(text: string): Promise<void> {
