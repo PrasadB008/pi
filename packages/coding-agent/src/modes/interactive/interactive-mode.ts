@@ -3264,9 +3264,8 @@ export class InteractiveMode {
 				this.editor.setText("");
 				return;
 			}
-			const todoText = parseTodoCommand(text);
-			if (todoText !== undefined) {
-				this.handleTodoCommand(todoText);
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6798,8 +6797,9 @@ export class InteractiveMode {
 	}
 
 	private handleTodoCommand(text: string): void {
-		if (text) {
-			const item = this.todoList.add(text);
+		const itemText = parseTodoCommand(text);
+		if (itemText) {
+			const item = this.todoList.add(itemText);
 			this.chatContainer.addChild(new Spacer(1));
 			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Todo added: ${item}`), 1, 0));
 			this.ui.requestRender();
