@@ -117,6 +117,7 @@ import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
+import { parseTodoCommand, TodoList } from "../../core/todo-list.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
@@ -449,6 +450,7 @@ export interface InteractiveModeOptions {
 }
 
 export class InteractiveMode {
+	private todoList = new TodoList();
 	private runtimeHost: AgentSessionRuntime;
 	private renderer: TuiMainScreen | TuiAltScreen;
 	private ui: TUI;
@@ -3254,6 +3256,11 @@ export class InteractiveMode {
 			}
 			if (text === "/name" || text.startsWith("/name ")) {
 				this.handleNameCommand(text);
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6705,6 +6712,27 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		const arg = parseTodoCommand(text) ?? "";
+		if (arg) {
+			const added = this.todoList.add(arg);
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Todo added: ${added}`), 1, 0));
+			this.ui.requestRender();
+			return;
+		}
+
+		const items = this.todoList.list();
+		this.chatContainer.addChild(new Spacer(1));
+		if (items.length === 0) {
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", "No todo items. Usage: /todo <text>"), 1, 0));
+		} else {
+			const body = items.map((item, index) => `${index + 1}. ${item}`).join("\n");
+			this.chatContainer.addChild(new ThemedText(() => `${theme.bold("Todo")}\n${body}`, 1, 0));
+		}
 		this.ui.requestRender();
 	}
 
