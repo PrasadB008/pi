@@ -3339,6 +3339,12 @@ export class InteractiveMode {
 				this.editor.setText("");
 				return;
 			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				const todoText = text.startsWith("/todo ") ? text.slice(6).trim() : "";
+				this.editor.setText("");
+				this.handleTodoCommand(todoText);
+				return;
+			}
 			if (text === "/quit") {
 				this.editor.setText("");
 				await this.shutdown();
@@ -6808,6 +6814,29 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Markdown(changelogMarkdown, 1, 1, this.getMarkdownThemeWithSettings()));
 		this.chatContainer.addChild(new DynamicBorder());
 		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		if (text) {
+			// Add todo item
+			this.session.addTodoItem(text);
+			this.showInfo(`Added: ${text}`);
+		} else {
+			// List todo items
+			const items = this.session.getTodoItems();
+			if (items.length === 0) {
+				this.showInfo("No todo items.");
+			} else {
+				const todoList = items.map((item, i) => `${i + 1}. ${item}`).join("\n");
+				this.chatContainer.addChild(new Spacer(1));
+				this.chatContainer.addChild(new DynamicBorder());
+				this.chatContainer.addChild(new ThemedText(() => theme.bold(theme.fg("accent", "Todo List")), 1, 0));
+				this.chatContainer.addChild(new Spacer(1));
+				this.chatContainer.addChild(new ThemedText(() => todoList, 1, 1));
+				this.chatContainer.addChild(new DynamicBorder());
+				this.ui.requestRender();
+			}
+		}
 	}
 
 	/**
