@@ -5,7 +5,7 @@ import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 
-const TODO_PATTERN = /\b(TODO|FIXME)\b[:(\s-]*(.*)$/;
+const TODO_PATTERN = /\b(TODO|FIXME)\b(?:\([^)]*\))?[:\s-]*(.*)$/;
 const MAX_FILE_BYTES = 1024 * 1024;
 const MAX_FILES = 20000;
 const IGNORED_DIRS = new Set([".git", "node_modules", "dist", "build", "coverage", ".next", ".venv", "target"]);
