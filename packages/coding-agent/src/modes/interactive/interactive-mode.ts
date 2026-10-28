@@ -131,6 +131,7 @@ import { getCwdRelativePath } from "../../utils/paths.ts";
 import { getPiUserAgent } from "../../utils/pi-user-agent.ts";
 import { killTrackedDetachedChildren } from "../../utils/shell.ts";
 import { loadAllHighlightLanguages } from "../../utils/syntax-highlight.ts";
+import { findTodos, type TodoItem } from "../../utils/todos.ts";
 import { ensureTool, type ToolStatus } from "../../utils/tools-manager.ts";
 import { checkForNewPiVersion, type LatestPiRelease } from "../../utils/version-check.ts";
 import { reportBug } from "./bug-report.ts";
@@ -3265,6 +3266,11 @@ export class InteractiveMode {
 			if (text === "/changelog") {
 				this.handleChangelogCommand();
 				this.editor.setText("");
+				return;
+			}
+			if (text === "/todos") {
+				this.editor.setText("");
+				await this.handleTodosCommand();
 				return;
 			}
 			if (text === "/hotkeys") {
@@ -6807,6 +6813,39 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new Markdown(changelogMarkdown, 1, 1, this.getMarkdownThemeWithSettings()));
 		this.chatContainer.addChild(new DynamicBorder());
+		this.ui.requestRender();
+	}
+
+	private async handleTodosCommand(): Promise<void> {
+		let todos: TodoItem[];
+		try {
+			todos = await findTodos(this.sessionManager.getCwd());
+		} catch (error) {
+			this.showError(`Could not scan for TODOs (requires a git repository): ${error instanceof Error ? error.message : String(error)}`);
+			return;
+		}
+
+		const maxShown = 200;
+		const shown = todos.slice(0, maxShown);
+		const renderTodos = (): string => {
+			if (todos.length === 0) return theme.fg("dim", "No TODO comments found.");
+			let out = `${theme.bold("TODOs")} ${theme.fg("dim", `(${todos.length})`)}\n`;
+			let currentFile = "";
+			for (const todo of shown) {
+				if (todo.file !== currentFile) {
+					currentFile = todo.file;
+					out += `\n${theme.fg("accent", currentFile)}\n`;
+				}
+				out += `  ${theme.fg("dim", `${todo.line}:`)} ${todo.text || theme.fg("dim", "(no description)")}\n`;
+			}
+			if (todos.length > shown.length) {
+				out += `\n${theme.fg("dim", `... and ${todos.length - shown.length} more`)}\n`;
+			}
+			return out.trimEnd();
+		};
+
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(new ThemedText(renderTodos, 1, 0));
 		this.ui.requestRender();
 	}
 
