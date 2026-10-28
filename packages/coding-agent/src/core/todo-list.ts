@@ -18,3 +18,22 @@ export class TodoList {
 		this.items = [];
 	}
 }
+
+export interface TodoCommandResult {
+	kind: "added" | "list" | "empty";
+	message: string;
+}
+
+/** Run a `/todo` or `/todo <text>` input against the list and describe the outcome. */
+export function runTodoCommand(todoList: TodoList, input: string): TodoCommandResult {
+	const text = input.replace(/^\/todo\s*/, "").trim();
+	if (text) {
+		const position = todoList.add(text);
+		return { kind: "added", message: `Todo ${position} added: ${text}` };
+	}
+	const items = todoList.list();
+	if (items.length === 0) {
+		return { kind: "empty", message: "No todos. Add one with /todo <text>" };
+	}
+	return { kind: "list", message: items.map((entry, index) => `${index + 1}. ${entry}`).join("\n") };
+}
