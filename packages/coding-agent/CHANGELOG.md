@@ -4,6 +4,7 @@
 
 ### Added
 
+- Added a `/todo [text]` slash command that adds an item to the session todo list, or lists the items when called without text.
 - Added a Models Configuration reference generated from the `models.json` schema, listing all provider, model, model override, and compatibility fields ([#10790](https://github.com/earendil-works/pi/issues/10790))
 
 ### Changed
