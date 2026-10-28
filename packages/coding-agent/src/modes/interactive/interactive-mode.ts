@@ -117,6 +117,7 @@ import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
+import { applyTodoCommand } from "../../core/todo-list.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
@@ -6715,18 +6716,16 @@ export class InteractiveMode {
 	}
 
 	private handleTodoCommand(text: string): void {
-		const item = text.replace(/^\/todo\s*/, "").trim();
-		if (item) {
-			this.todos.push(item);
-			const count = this.todos.length;
-			this.chatContainer.addChild(new Spacer(1));
-			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Todo added (${count}): ${item}`), 1, 0));
-		} else if (this.todos.length === 0) {
+		const result = applyTodoCommand(this.todos, text);
+		if (result.kind === "empty") {
 			this.showWarning("No todos. Add one with /todo <text>");
 		} else {
-			const lines = this.todos.map((todo, index) => `${index + 1}. ${todo}`).join("\n");
+			const message =
+				result.kind === "added"
+					? `Todo added (${result.count}): ${result.item}`
+					: `Todos:\n${result.items.map((todo, index) => `${index + 1}. ${todo}`).join("\n")}`;
 			this.chatContainer.addChild(new Spacer(1));
-			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Todos:\n${lines}`), 1, 0));
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", message), 1, 0));
 		}
 		this.ui.requestRender();
 	}
