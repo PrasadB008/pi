@@ -133,6 +133,7 @@ import { killTrackedDetachedChildren } from "../../utils/shell.ts";
 import { loadAllHighlightLanguages } from "../../utils/syntax-highlight.ts";
 import { ensureTool, type ToolStatus } from "../../utils/tools-manager.ts";
 import { checkForNewPiVersion, type LatestPiRelease } from "../../utils/version-check.ts";
+import { findTodos, formatTodos } from "../../core/todos.ts";
 import { reportBug } from "./bug-report.ts";
 import { createChatViewport } from "./chat-viewport.ts";
 import { ArminComponent } from "./components/armin.ts";
@@ -3259,6 +3260,11 @@ export class InteractiveMode {
 			}
 			if (text === "/session") {
 				this.handleSessionCommand();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todos") {
+				await this.handleTodosCommand();
 				this.editor.setText("");
 				return;
 			}
@@ -6787,6 +6793,18 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new ThemedText(renderInfo, 1, 0));
 		this.ui.requestRender();
+	}
+
+	private async handleTodosCommand(): Promise<void> {
+		try {
+			const result = await findTodos(this.sessionManager.getCwd());
+			const output = formatTodos(result);
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(new ThemedText(() => `${theme.bold("TODOs")}\n\n${output}`, 1, 0));
+			this.ui.requestRender();
+		} catch (error) {
+			this.showError(`Failed to search for TODOs: ${error instanceof Error ? error.message : String(error)}`);
+		}
 	}
 
 	private handleChangelogCommand(): void {
