@@ -507,6 +507,7 @@ export class InteractiveMode {
 
 	// Tool execution tracking: toolCallId -> component
 	private pendingTools = new Map<string, ToolExecutionComponent>();
+	private todoItems: string[] = [];
 
 	// Tool output expansion state
 	private toolOutputExpanded = false;
@@ -3254,6 +3255,11 @@ export class InteractiveMode {
 			}
 			if (text === "/name" || text.startsWith("/name ")) {
 				this.handleNameCommand(text);
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6705,6 +6711,29 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		const item = text.replace(/^\/todo\s*/, "").trim();
+		if (item) {
+			this.todoItems.push(item);
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(
+				new ThemedText(() => theme.fg("dim", `Todo added (${this.todoItems.length}): ${item}`), 1, 0),
+			);
+			this.ui.requestRender();
+			return;
+		}
+
+		this.chatContainer.addChild(new Spacer(1));
+		if (this.todoItems.length === 0) {
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", "No todos. Add one with /todo <text>"), 1, 0));
+		} else {
+			const lines = this.todoItems.map((todo, index) => `${index + 1}. ${todo}`);
+			const listing = `Todos:\n${lines.join("\n")}`;
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", listing), 1, 0));
+		}
 		this.ui.requestRender();
 	}
 
