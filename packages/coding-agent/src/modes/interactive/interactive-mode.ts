@@ -116,6 +116,7 @@ import {
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
+import { TodoList } from "../../core/todo-list.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
@@ -534,6 +535,7 @@ export class InteractiveMode {
 
 	// Track pending bash components (shown in pending area, moved to chat on submit)
 	private pendingBashComponents: BashExecutionComponent[] = [];
+	private todoList = new TodoList();
 
 	// Auto-compaction state
 	private autoCompactionEscapeHandler?: () => void;
@@ -3259,6 +3261,11 @@ export class InteractiveMode {
 			}
 			if (text === "/session") {
 				this.handleSessionCommand();
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6705,6 +6712,25 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		const argument = text.replace(/^\/todo\s*/, "").trim();
+		this.chatContainer.addChild(new Spacer(1));
+		if (argument) {
+			const item = this.todoList.add(argument);
+			this.chatContainer.addChild(
+				new ThemedText(() => theme.fg("dim", `Todo added (${this.todoList.list().length}): ${item}`), 1, 0),
+			);
+		} else {
+			const items = this.todoList.list();
+			const lines =
+				items.length === 0
+					? theme.fg("dim", "No todo items. Add one with /todo <text>")
+					: `${theme.bold("Todo")}\n${items.map((item, index) => `${theme.fg("dim", `${index + 1}.`)} ${item}`).join("\n")}`;
+			this.chatContainer.addChild(new ThemedText(() => lines, 1, 0));
+		}
 		this.ui.requestRender();
 	}
 
