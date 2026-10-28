@@ -5,6 +5,7 @@
 ### Added
 
 - Added a Models Configuration reference generated from the `models.json` schema, listing all provider, model, model override, and compatibility fields ([#10790](https://github.com/earendil-works/pi/issues/10790))
+- Added `/todo [text]` slash command: adds an item to an in-memory todo list for the running process, or lists the items when no text is given
 
 ### Changed
 
