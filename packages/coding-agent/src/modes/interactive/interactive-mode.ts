@@ -117,6 +117,7 @@ import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
+import { TodoList } from "../../core/todo-list.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
@@ -499,6 +500,9 @@ export class InteractiveMode {
 	private lastStatusText: ThemedText | undefined = undefined;
 	private lastStatusMessage = "";
 	private managedToolStatusStarted = false;
+
+	// Session todo list (/todo), in memory only
+	private todoList = new TodoList();
 
 	// Streaming message tracking
 	private streamingComponent: AssistantMessageComponent | undefined = undefined;
@@ -3254,6 +3258,11 @@ export class InteractiveMode {
 			}
 			if (text === "/name" || text.startsWith("/name ")) {
 				this.handleNameCommand(text);
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6705,6 +6714,29 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		const item = text.replace(/^\/todo\s*/, "").trim();
+		if (item) {
+			const position = this.todoList.add(item);
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Todo ${position} added: ${item}`), 1, 0));
+			this.ui.requestRender();
+			return;
+		}
+
+		const items = this.todoList.list();
+		this.chatContainer.addChild(new Spacer(1));
+		if (items.length === 0) {
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", "No todos. Add one with /todo <text>"), 1, 0));
+		} else {
+			const lines = items.map((entry, index) => `${index + 1}. ${entry}`).join("\n");
+			this.chatContainer.addChild(
+				new ThemedText(() => `${theme.bold("Todos")}\n${theme.fg("dim", lines)}`, 1, 0),
+			);
+		}
 		this.ui.requestRender();
 	}
 
