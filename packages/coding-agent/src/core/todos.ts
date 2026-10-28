@@ -35,7 +35,11 @@ export function parseRipgrepTodoLine(jsonLine: string, cwd: string): TodoItem | 
 	if (typeof event !== "object" || event === null) return undefined;
 	const { type, data } = event as { type?: unknown; data?: unknown };
 	if (type !== "match" || typeof data !== "object" || data === null) return undefined;
-	const { path: pathField, line_number: lineNumber, lines } = data as {
+	const {
+		path: pathField,
+		line_number: lineNumber,
+		lines,
+	} = data as {
 		path?: { text?: unknown };
 		line_number?: unknown;
 		lines?: { text?: unknown };
