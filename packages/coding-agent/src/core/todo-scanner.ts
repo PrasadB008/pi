@@ -35,13 +35,16 @@ const MAX_FILE_BYTES = 1024 * 1024;
 const MAX_TEXT_LENGTH = 200;
 
 // Matches TODO or FIXME as a whole word inside a comment (// # /* * -- ; <!-- %).
-const TODO_PATTERN = /(?:\/\/|\/\*|\*|#|--|;|<!--|%)\s*.*?\b(TODO|FIXME)\b[\s:(-]*(.*)$/;
+const TODO_PATTERN = /(?:\/\/|\/\*|\*|#|--|;|<!--|%)\s*.*?\b(TODO|FIXME)\b(?:\([^)]*\))?[\s:-]*(.*)$/;
 
 /** Extract a TODO/FIXME item from one line, or undefined if the line has none. */
 export function parseTodoLine(lineText: string, lineNumber: number): TodoItem | undefined {
 	const match = TODO_PATTERN.exec(lineText);
 	if (!match) return undefined;
-	let text = match[2].replace(/\*\/\s*$/, "").replace(/-->\s*$/, "").trim();
+	let text = match[2]
+		.replace(/\*\/\s*$/, "")
+		.replace(/-->\s*$/, "")
+		.trim();
 	if (text.length > MAX_TEXT_LENGTH) text = `${text.slice(0, MAX_TEXT_LENGTH - 3)}...`;
 	return { line: lineNumber, kind: match[1] as TodoItem["kind"], text };
 }
@@ -105,7 +108,9 @@ export function findTodos(root: string): FileTodos[] {
 export function formatTodos(results: FileTodos[]): string {
 	if (results.length === 0) return "No TODO or FIXME comments found.";
 	const total = results.reduce((sum, r) => sum + r.items.length, 0);
-	const lines: string[] = [`${total} TODO/FIXME comment${total === 1 ? "" : "s"} in ${results.length} file${results.length === 1 ? "" : "s"}`];
+	const lines: string[] = [
+		`${total} TODO/FIXME comment${total === 1 ? "" : "s"} in ${results.length} file${results.length === 1 ? "" : "s"}`,
+	];
 	for (const result of results) {
 		lines.push("", result.file);
 		for (const item of result.items) {
