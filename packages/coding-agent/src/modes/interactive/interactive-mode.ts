@@ -466,6 +466,8 @@ export class InteractiveMode {
 	private autocompleteProvider: AutocompleteProvider | undefined;
 	private autocompleteProviderWrappers: AutocompleteProviderFactory[] = [];
 	private fdPath: string | undefined;
+	// Session-scoped todo items added with /todo <text>; not persisted.
+	private todoItems: string[] = [];
 	private editorContainer: Container;
 	private activeSelectorToken?: object;
 	private activeSelectorDispose?: () => void;
@@ -3254,6 +3256,11 @@ export class InteractiveMode {
 			}
 			if (text === "/name" || text.startsWith("/name ")) {
 				this.handleNameCommand(text);
+				this.editor.setText("");
+				return;
+			}
+			if (text === "/todo" || text.startsWith("/todo ")) {
+				this.handleTodoCommand(text);
 				this.editor.setText("");
 				return;
 			}
@@ -6705,6 +6712,32 @@ export class InteractiveMode {
 		this.chatContainer.addChild(new Spacer(1));
 		const displayName = sessionName ?? name;
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Session name set: ${displayName}`), 1, 0));
+		this.ui.requestRender();
+	}
+
+	private handleTodoCommand(text: string): void {
+		const item = text.replace(/^\/todo\s*/, "").trim();
+		if (item) {
+			this.todoItems.push(item);
+			this.chatContainer.addChild(new Spacer(1));
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Todo added: ${item}`), 1, 0));
+			this.ui.requestRender();
+			return;
+		}
+
+		if (this.todoItems.length === 0) {
+			this.showWarning("No todo items. Usage: /todo <text>");
+			return;
+		}
+		const items = [...this.todoItems];
+		this.chatContainer.addChild(new Spacer(1));
+		this.chatContainer.addChild(
+			new ThemedText(
+				() => `${theme.bold("Todo")}\n${items.map((entry, index) => theme.fg("dim", `${index + 1}. ${entry}`)).join("\n")}`,
+				1,
+				0,
+			),
+		);
 		this.ui.requestRender();
 	}
 
