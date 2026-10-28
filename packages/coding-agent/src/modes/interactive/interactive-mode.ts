@@ -115,6 +115,7 @@ import {
 } from "../../core/session-manager.ts";
 import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.ts";
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
+import { runTodoCommand, TodoList } from "../../core/todo-list.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
@@ -544,7 +545,7 @@ export class InteractiveMode {
 	// Messages queued while compaction is running
 	private compactionQueuedMessages: CompactionQueuedMessage[] = [];
 	/** Session-scoped todo items added with /todo. In memory only; lost when the process exits. */
-	private todoItems: string[] = [];
+	private todos = new TodoList();
 
 	// Shutdown state
 	private shutdownRequested = false;
@@ -6716,16 +6717,7 @@ export class InteractiveMode {
 	}
 
 	private handleTodoCommand(text: string): void {
-		const item = text.replace(/^\/todo\s*/, "").trim();
-		let message: string;
-		if (item) {
-			this.todoItems.push(item);
-			message = `Todo added (${this.todoItems.length}): ${item}`;
-		} else if (this.todoItems.length === 0) {
-			message = "No todos. Use /todo <text> to add one.";
-		} else {
-			message = `Todos:\n${this.todoItems.map((todo, index) => `${index + 1}. ${todo}`).join("\n")}`;
-		}
+		const message = runTodoCommand(this.todos, text);
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", message), 1, 0));
 		this.ui.requestRender();
