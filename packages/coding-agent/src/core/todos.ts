@@ -42,12 +42,10 @@ export function parseGitGrepOutput(output: string, limit: number = MAX_TODO_MATC
  * Throws when `cwd` is not inside a git repository.
  */
 export async function findTodos(cwd: string, signal?: AbortSignal): Promise<TodoResult> {
-	const result = await execCommand(
-		"git",
-		["grep", "-n", "-I", "--untracked", "-E", TODO_PATTERN, "--", "."],
-		cwd,
-		{ signal, timeout: 30000 },
-	);
+	const result = await execCommand("git", ["grep", "-n", "-I", "--untracked", "-E", TODO_PATTERN, "--", "."], cwd, {
+		signal,
+		timeout: 30000,
+	});
 	// git grep exits with 1 when nothing matched.
 	if (result.code === 1 && !result.stderr.trim()) return { matches: [], total: 0 };
 	if (result.code !== 0) {
