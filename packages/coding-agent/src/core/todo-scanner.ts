@@ -75,7 +75,13 @@ function walk(root: string, dir: string, maxFileSize: number, results: TodoFileR
 		if (buffer.subarray(0, BINARY_SNIFF_BYTES).includes(0)) continue;
 		const items = findTodosInContent(buffer.toString("utf-8"));
 		if (items.length > 0) {
-			results.push({ file: fullPath.slice(root.length + 1).split("\\").join("/"), items });
+			results.push({
+				file: fullPath
+					.slice(root.length + 1)
+					.split("\\")
+					.join("/"),
+				items,
+			});
 		}
 	}
 }
