@@ -7,7 +7,9 @@ import { findTodos, formatTodos, MAX_TODO_MATCHES, parseTodoOutput } from "../sr
 
 describe("parseTodoOutput", () => {
 	test("parses git grep rows and ignores non-matching lines", () => {
-		const output = ["src/a.ts:3:// TODO: fix this", "src/b.ts:10:  /* FIXME handle null */", "garbage", ""].join("\n");
+		const output = ["src/a.ts:3:// TODO: fix this", "src/b.ts:10:  /* FIXME handle null */", "garbage", ""].join(
+			"\n",
+		);
 		expect(parseTodoOutput(output)).toEqual([
 			{ file: "src/a.ts", line: 3, marker: "TODO", text: "// TODO: fix this" },
 			{ file: "src/b.ts", line: 10, marker: "FIXME", text: "/* FIXME handle null */" },
@@ -30,9 +32,15 @@ describe("formatTodos", () => {
 			truncated: false,
 		});
 		expect(text).toBe(
-			["a.ts", "  1: // TODO one", "  5: // FIXME two", "b.ts", "  2: // TODO three", "", "3 matches in 2 files."].join(
-				"\n",
-			),
+			[
+				"a.ts",
+				"  1: // TODO one",
+				"  5: // FIXME two",
+				"b.ts",
+				"  2: // TODO three",
+				"",
+				"3 matches in 2 files.",
+			].join("\n"),
 		);
 	});
 });
