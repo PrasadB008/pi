@@ -47,6 +47,7 @@ Review a session before exporting or sharing it. Sessions can contain prompts, t
 |---|---|
 | `/trust` | Save a project trust decision for future Pi processes |
 | `/reload` | Reload keybindings, extensions, skills, templates, themes, and context files |
+| `/todos` | List TODO and FIXME comments in tracked and untracked, non-ignored files (first 200 matches, grouped by file) |
 | `/hotkeys` | Show active keyboard shortcuts |
 | `/changelog` | Show changelog entries |
 | `/quit` | Quit Pi |
