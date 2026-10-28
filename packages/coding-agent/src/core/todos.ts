@@ -30,15 +30,7 @@ const DEFAULT_MAX_ITEMS = 500;
 const DEFAULT_MAX_FILE_SIZE = 1024 * 1024;
 const BINARY_SNIFF_BYTES = 8000;
 
-const IGNORED_DIRECTORIES = new Set([
-	".git",
-	"node_modules",
-	"dist",
-	"build",
-	"coverage",
-	".next",
-	".turbo",
-]);
+const IGNORED_DIRECTORIES = new Set([".git", "node_modules", "dist", "build", "coverage", ".next", ".turbo"]);
 
 /** A TODO/FIXME tag counts only when a comment marker appears before it on the same line. */
 const TODO_PATTERN = /(?:\/\/|\/\*|^\s*\*|#|--|<!--|;)[^\n]*?\b(TODO|FIXME)\b[:(]?\s*(.*)$/;
