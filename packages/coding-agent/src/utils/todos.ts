@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import type { Dirent } from "node:fs";
 import { readdir, readFile, stat } from "node:fs/promises";
 import * as path from "node:path";
 import { promisify } from "node:util";
@@ -54,7 +55,7 @@ async function listWithWalk(root: string): Promise<string[]> {
 	const pending = [""];
 	while (pending.length > 0 && files.length < MAX_FILES) {
 		const relDir = pending.pop()!;
-		let entries;
+		let entries: Dirent[];
 		try {
 			entries = await readdir(path.join(root, relDir), { withFileTypes: true });
 		} catch {
