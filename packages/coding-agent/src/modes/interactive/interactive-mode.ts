@@ -117,6 +117,7 @@ import type { FullscreenExitOutput, TuiMode } from "../../core/settings-manager.
 import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
+import { parseTodoArgument, TodoList } from "../../core/todo-list.ts";
 import { withBuiltInRenderers } from "../../core/tools/renderers/index.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { hasTrustRequiringProjectResources, ProjectTrustStore } from "../../core/trust-manager.ts";
@@ -467,7 +468,7 @@ export class InteractiveMode {
 	private autocompleteProviderWrappers: AutocompleteProviderFactory[] = [];
 	private fdPath: string | undefined;
 	// Session-scoped todo items added with /todo <text>; not persisted.
-	private todoItems: string[] = [];
+	private todoList = new TodoList();
 	private editorContainer: Container;
 	private activeSelectorToken?: object;
 	private activeSelectorDispose?: () => void;
@@ -6716,20 +6717,19 @@ export class InteractiveMode {
 	}
 
 	private handleTodoCommand(text: string): void {
-		const item = text.replace(/^\/todo\s*/, "").trim();
-		if (item) {
-			this.todoItems.push(item);
+		const added = this.todoList.add(parseTodoArgument(text));
+		if (added) {
 			this.chatContainer.addChild(new Spacer(1));
-			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Todo added: ${item}`), 1, 0));
+			this.chatContainer.addChild(new ThemedText(() => theme.fg("dim", `Todo added: ${added}`), 1, 0));
 			this.ui.requestRender();
 			return;
 		}
 
-		if (this.todoItems.length === 0) {
+		const items = this.todoList.list();
+		if (items.length === 0) {
 			this.showWarning("No todo items. Usage: /todo <text>");
 			return;
 		}
-		const items = [...this.todoItems];
 		this.chatContainer.addChild(new Spacer(1));
 		this.chatContainer.addChild(
 			new ThemedText(
